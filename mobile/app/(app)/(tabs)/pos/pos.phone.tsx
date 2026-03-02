@@ -55,11 +55,9 @@ import { PosCatalogListShell } from "@/modules/pos/components/PosCatalogListShel
 import { posApi } from "@/modules/pos/pos.api";
 import { PosModifiersPickerSheet } from "@/modules/pos/components/PosModifiersPickerSheet";
 import type { ProductModifierGroup } from "@/modules/pos/pos.api";
-import type { SelectedAttributeSnapshot } from "@/modules/attributes/attributes.types";
 import { unitDisplayToken } from "@/modules/units/units.format";
 import { useNavLock } from "@/shared/hooks/useNavLock";
 import { formatMoney } from "@/shared/money/money.format";
-import { consumePendingAttributeSelection } from "@/modules/pos/pos.attributeSelectionStore";
 
 type CartLine = {
 	productId: string;
@@ -70,8 +68,6 @@ type CartLine = {
 	selectedModifierOptionIds?: string[];
 	totalModifiersDeltaMinor?: string;
 	modifierSummary?: string;
-	selectedAttributes?: SelectedAttributeSnapshot[];
-	attributeSummary?: string;
 
 	unitId?: string;
 	unitName?: string;
@@ -317,10 +313,6 @@ export default function PosPhone() {
 	const [modifierPickerProduct, setModifierPickerProduct] = useState<CatalogProduct | null>(null);
 	const [modifierPickerGroups, setModifierPickerGroups] = useState<ProductModifierGroup[]>([]);
 	const [loadingModifierProductId, setLoadingModifierProductId] = useState<string | null>(null);
-	const [pendingAttributeSnapshots, setPendingAttributeSnapshots] = useState<SelectedAttributeSnapshot[]>([]);
-	const pendingAttributeFlowRef = useRef<
-		{ product: CatalogProduct; groups: ProductModifierGroup[]; selectedAttributes: SelectedAttributeSnapshot[] } | null
-	>(null);
 
 	const productsQuery = useQuery({
 		queryKey: ["pos", "catalog", "products", trimmedQ],
@@ -370,7 +362,6 @@ export default function PosPhone() {
 					unitPrice: l.unitPrice,
 					selectedModifierOptionIds: l.selectedModifierOptionIds ?? [],
 					totalModifiersDeltaMinor: l.totalModifiersDeltaMinor ?? "0",
-					selectedAttributes: l.selectedAttributes ?? [],
 				})),
 				payments: [{ method: "CASH" as const, amount: total }],
 			};
@@ -406,7 +397,6 @@ export default function PosPhone() {
 			selectedModifierOptionIds: string[] = [],
 			totalModifiersDeltaMinor: bigint = 0n,
 			modifierSummary = "",
-			selectedAttributes: SelectedAttributeSnapshot[] = [],
 		) => {
 			if (disabled) return;
 
@@ -442,14 +432,6 @@ export default function PosPhone() {
 						selectedModifierOptionIds: existing?.selectedModifierOptionIds ?? selectedModifierOptionIds,
 						totalModifiersDeltaMinor: existing?.totalModifiersDeltaMinor ?? totalModifiersDeltaMinor.toString(),
 						modifierSummary: existing?.modifierSummary ?? modifierSummary,
-						selectedAttributes: existing?.selectedAttributes ?? selectedAttributes,
-						attributeSummary:
-							existing?.attributeSummary ??
-							(selectedAttributes.length > 0
-								? selectedAttributes
-										.map((entry) => `${entry.attributeNameSnapshot}: ${entry.optionNameSnapshot}`)
-										.join(" | ")
-								: ""),
 						unitId,
 						unitName,
 						unitAbbreviation,
@@ -472,30 +454,13 @@ export default function PosPhone() {
 
 		setLoadingModifierProductId(p.id);
 		try {
-			const productAttributes = await posApi.getProductAttributes(p.id);
-			const requiredAttributes = (productAttributes ?? []).filter(
-				(entry) => entry.isRequired && (entry.attribute?.options ?? []).some((option) => !option.isArchived),
-			);
 			const groups = await posApi.getProductModifiers(p.id);
 			const available = (groups ?? []).filter((group) => (group.options ?? []).length > 0);
-			if (requiredAttributes.length > 0) {
-				pendingAttributeFlowRef.current = {
-					product: p,
-					groups: available,
-					selectedAttributes: [],
-				};
-				router.push({
-					pathname: "/(app)/(tabs)/pos/attributes/select" as any,
-					params: { productId: p.id, productName: p.name } as any,
-				} as any);
-				return;
-			}
 			if (available.length === 0) {
 				addToCartResolved(p);
 				return;
 			}
 
-			setPendingAttributeSnapshots([]);
 			setModifierPickerProduct(p);
 			setModifierPickerGroups(available);
 			setModifierPickerVisible(true);
@@ -537,28 +502,6 @@ export default function PosPhone() {
 		useCallback(() => {
 			const pending = consumePendingQuantityEdit();
 			if (pending) setQty(pending.productId, pending.quantity);
-
-			const pendingAttributes = consumePendingAttributeSelection();
-			if (!pendingAttributes) return;
-			const pendingFlow = pendingAttributeFlowRef.current;
-			if (!pendingFlow || pendingFlow.product.id !== pendingAttributes.productId) return;
-			pendingAttributeFlowRef.current = null;
-
-			if (pendingFlow.groups.length === 0) {
-				addToCartResolved(
-					pendingFlow.product,
-					[],
-					0n,
-					"",
-					pendingAttributes.selectedAttributes,
-				);
-				return;
-			}
-
-			setPendingAttributeSnapshots(pendingAttributes.selectedAttributes);
-			setModifierPickerProduct(pendingFlow.product);
-			setModifierPickerGroups(pendingFlow.groups);
-			setModifierPickerVisible(true);
 		}, [addToCartResolved, setQty]),
 	);
 
@@ -658,11 +601,6 @@ export default function PosPhone() {
 								</BAIText>
 							) : null}
 						</BAIText>
-						{l.attributeSummary ? (
-							<BAIText variant='caption' muted numberOfLines={2}>
-								{l.attributeSummary}
-							</BAIText>
-						) : null}
 					</View>
 
 					<View style={styles.cartRowRight}>
@@ -976,7 +914,6 @@ export default function PosPhone() {
 						setModifierPickerVisible(false);
 						setModifierPickerProduct(null);
 						setModifierPickerGroups([]);
-						setPendingAttributeSnapshots([]);
 					}}
 					onConfirm={(selectionMap, selectedModifierOptionIds, totalDeltaMinor) => {
 						const product = modifierPickerProduct;
@@ -992,12 +929,10 @@ export default function PosPhone() {
 							selectedModifierOptionIds,
 							totalDeltaMinor,
 							parts.join(" | "),
-							pendingAttributeSnapshots,
 						);
 						setModifierPickerVisible(false);
 						setModifierPickerProduct(null);
 						setModifierPickerGroups([]);
-						setPendingAttributeSnapshots([]);
 					}}
 				/>
 			</BAISurface>

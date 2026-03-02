@@ -6,12 +6,6 @@ export type CheckoutCartItemInput = {
 	unitPrice: string; // decimal string
 	selectedModifierOptionIds?: string[];
 	totalModifiersDeltaMinor?: string;
-	selectedAttributes?: {
-		attributeId: string;
-		optionId: string;
-		attributeNameSnapshot?: string;
-		optionNameSnapshot?: string;
-	}[];
 };
 
 export type CheckoutPaymentInput = {
@@ -46,12 +40,6 @@ export type CheckoutResult = {
 			lineTotal: string;
 			selectedModifierOptionIds: string[];
 			totalModifiersDeltaMinor: string;
-			selectedAttributes: {
-				attributeId: string;
-				optionId: string;
-				attributeNameSnapshot: string;
-				optionNameSnapshot: string;
-			}[];
 		}[];
 		payments: {
 			id: string;

@@ -9,12 +9,6 @@ export type CheckoutCartItemInput = {
 	unitPrice?: string; // legacy decimal major units (compatibility)
 	selectedModifierOptionIds?: string[];
 	totalModifiersDeltaMinor?: string;
-	selectedAttributes?: Array<{
-		attributeId: string;
-		optionId: string;
-		attributeNameSnapshot?: string;
-		optionNameSnapshot?: string;
-	}>;
 };
 
 export type CheckoutPaymentInput = {
@@ -58,12 +52,6 @@ export type CheckoutResult = {
 			unitPriceMinor: string;
 			lineTotalMinor: string;
 			selectedModifierOptionIds: string[];
-			selectedAttributes: Array<{
-				attributeId: string;
-				optionId: string;
-				attributeNameSnapshot: string;
-				optionNameSnapshot: string;
-			}>;
 			totalModifiersDeltaMinor: string;
 			unitPrice: string; // compatibility decimal major units
 			lineTotal: string; // compatibility decimal major units

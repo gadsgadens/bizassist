@@ -12,7 +12,6 @@ export type ProductCreateDraft = {
 	categoryId: string;
 	categoryName: string;
 	modifierGroupIds: string[];
-	attributeSelections: { attributeId: string; isRequired?: boolean }[];
 
 	// ✅ unit (UoM)
 	unitId: string;
@@ -69,7 +68,6 @@ export function createProductDraft(forcedDraftId?: string): ProductCreateDraft {
 		categoryId: "",
 		categoryName: "",
 		modifierGroupIds: [],
-		attributeSelections: [],
 
 		// ✅ unit defaults (Each is resolved at screen level via unitsApi list)
 		unitId: "",

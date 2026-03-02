@@ -104,15 +104,6 @@ export default function InventoryAddMenu({ routeScope = "inventory" }: { routeSc
 						},
 					] satisfies AddMenuListItem[])
 				: []),
-			{
-				key: "attributes",
-				label: "Attributes",
-				subtitle: "Create and manage descriptive attributes.",
-				iconFamily: "ion",
-				icon: "options-outline",
-				onPress: () => safePush(toScopedRoute("/(app)/(tabs)/inventory/attributes")),
-				enabled: true,
-			},
 		],
 		[routeScope, safePush, toScopedRoute],
 	);

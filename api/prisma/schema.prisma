@@ -119,9 +119,6 @@ model Business {
   DiscountVisibility    DiscountVisibility[]
   InventoryMovements    InventoryMovement[]
   ModifierGroups        ModifierGroup[]
-  Attributes            Attribute[]
-  AttributeOptions      AttributeOption[]
-  ProductAttributes     ProductAttribute[]
   ProductModifierGroups ProductModifierGroup[]
   ModifierOptions       ModifierOption[]
   SaleLineItemModifiers SaleLineItemModifier[]
@@ -224,7 +221,6 @@ model Product {
   unit                      Unit?                  @relation(fields: [unitId], references: [id], onDelete: SetNull)
   images                    ProductImage[]
   productModifierGroups     ProductModifierGroup[]
-  productAttributes         ProductAttribute[]
   lineItems                 SaleLineItem[]
 
   @@unique([businessId, sku])
@@ -455,62 +451,6 @@ model ProductModifierGroup {
   @@index([businessId, modifierGroupId])
 }
 
-model Attribute {
-  id            String                 @id @default(uuid())
-  businessId    String
-  name          String                 @db.VarChar(120)
-  nameNormalized String                @db.VarChar(120)
-  selectionType AttributeSelectionType
-  isRequired    Boolean                @default(false)
-  sortOrder     Int                    @default(0)
-  isArchived    Boolean                @default(false)
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
-  Business      Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  options       AttributeOption[]
-  productLinks  ProductAttribute[]
-
-  @@unique([businessId, nameNormalized])
-  @@index([businessId, isArchived, sortOrder])
-  @@index([businessId, createdAt])
-}
-
-model AttributeOption {
-  id             String     @id @default(uuid())
-  businessId     String
-  attributeId    String
-  name           String     @db.VarChar(120)
-  nameNormalized String     @db.VarChar(120)
-  sortOrder      Int        @default(0)
-  isArchived     Boolean    @default(false)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  business       Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  attribute      Attribute  @relation(fields: [attributeId], references: [id], onDelete: Cascade)
-
-  @@unique([attributeId, nameNormalized])
-  @@index([businessId, attributeId, isArchived, sortOrder])
-  @@index([businessId, createdAt])
-}
-
-model ProductAttribute {
-  id          String    @id @default(uuid())
-  businessId  String
-  productId   String
-  attributeId String
-  isRequired  Boolean?
-  sortOrder   Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
-
-  @@unique([productId, attributeId])
-  @@index([businessId, productId, sortOrder])
-  @@index([businessId, attributeId])
-}
-
 model ModifierOption {
   id                    String                 @id @default(uuid())
   businessId            String
@@ -567,7 +507,6 @@ model SaleLineItem {
   unitPrice                 Decimal                @db.Decimal(12, 2)
   lineTotal                 Decimal                @db.Decimal(12, 2)
   selectedModifierOptionIds Json?
-  selectedAttributes         Json?
   totalModifiersDeltaMinor  BigInt?
   discounts                 SaleDiscount[]
   modifiers                 SaleLineItemModifier[]
@@ -765,11 +704,6 @@ enum InventoryMovementReason {
 }
 
 enum ModifierSelectionType {
-  SINGLE
-  MULTI
-}
-
-enum AttributeSelectionType {
   SINGLE
   MULTI
 }
