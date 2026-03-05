@@ -451,6 +451,187 @@ Enforcement:
 - PRs must satisfy the Technical Standards Manual before merge.
 - Non-compliant changes must be corrected or rejected.
 
+## 0.6 Domain Model Bible (Locked)
+
+Purpose:
+- The Domain Model Bible defines BizAssist canonical business entities and non-negotiable invariants.
+- It is the domain truth source for API behavior, mobile behavior, schema design, reporting, analytics, and AI read paths.
+
+Canonical source:
+- `docs/DOMAIN_MODEL_BIBLE.md`
+
+Locked principles:
+- inventory-first architecture
+- append-only inventory ledger
+- UDQI fixed-point quantity system (`Unit.precisionScale`)
+- archive-only lifecycle governance
+
+Canonical core entities include:
+- User
+- Business
+- StaffMembership
+- Product
+- Unit
+- Category
+- ModifierSet
+- ModifierOption
+- Sale
+- SaleLineItem
+- Payment
+- InventoryMovement
+
+Invariant enforcement:
+- inventory totals derive from immutable movement history
+- sale line pricing is snapshotted at finalization and historically immutable
+- modifier effects are price-only and never inventory quantity mutators
+- completed sales are immutable and preserve linked inventory movements
+
+Implementation rule:
+- if implementation contradicts the Domain Model Bible, implementation must be refactored to conform.
+
+## 0.7 System Invariants & Guardrails (Locked)
+
+Purpose:
+- System Invariants & Guardrails define non-negotiable safety rules that protect financial correctness, inventory integrity, authorization safety, and historical data trust.
+- Invariant violations must fail fast rather than allow corrupted state.
+
+Canonical source:
+- `docs/SYSTEM_INVARIANTS_GUARDRAILS.md`
+
+Locked invariant domains:
+- inventory invariants (append-only movement-derived stock)
+- quantity invariants (UDQI precision and fixed-point storage)
+- financial invariants (sale totals and payment reconciliation)
+- pricing invariants (historical unitPrice immutability)
+- modifier invariants (price-only effects)
+- sale finality invariants (immutable completed sales)
+- lifecycle invariants (archive-only business entities)
+- authorization invariants (auth + activeBusiness + membership)
+- media invariants (signed upload pipeline + deterministic paths)
+
+Guardrail enforcement:
+- critical rules must be enforced across API validation, service checks, and database constraints
+- client validation alone is insufficient
+
+Observability:
+- all invariant violations must be logged with violation type, entity, user context, and correlationId
+
+Enforcement rule:
+- if an operation would violate an invariant, the operation must be rejected.
+
+## 0.8 Feature Lifecycle Governance (Locked)
+
+Purpose:
+- Feature Lifecycle Governance defines the mandatory stage-gate process from idea through release and iteration.
+- It ensures feature work is architecture-aligned, domain-safe, and operationally controlled.
+
+Canonical source:
+- `docs/FEATURE_LIFECYCLE_GOVERNANCE.md`
+
+Locked lifecycle:
+- Idea
+- Discovery
+- Decision
+- Feature Ticket
+- Implementation
+- Release
+- Iteration
+
+Mandatory rule:
+- no feature may skip lifecycle stages.
+
+Decision governance:
+- outcomes are `Approved`, `Rejected`, or `Deferred`
+- architecture-changing features require ADR coverage before implementation
+
+Ticket governance:
+- approved features must include context anchor, feature idea, mode, ownership boundaries, technical constraints, acceptance criteria, and regression targets
+
+Implementation governance:
+- implementation must pass Architecture Lawbook, ADR, Domain Model Bible, System Invariants, and Technical Standards alignment checks
+
+Release governance:
+- release requires regression completion, invariant verification, and integration validation
+
+Escalation/rollback:
+- behavior-changing features require architecture review
+- releases must be reversible (disable or rollback path)
+
+## 0.9 Product Capability Map (Locked)
+
+Purpose:
+- The Product Capability Map defines what BizAssist can do, where each capability belongs, and who owns it.
+- It is the canonical ownership map for module boundaries, screen ownership, API ownership, and data ownership.
+
+Canonical source:
+- `docs/PRODUCT_CAPABILITY_MAP.md`
+
+Locked output model:
+- Level 1 -> Level 2 -> Level 3 capability map (no deeper than Level 3)
+- each Level 3 capability declares:
+  - owner surface
+  - mobile ownership
+  - API ownership
+  - DB ownership
+  - entities involved
+  - invariants impacted
+  - exclusions/notes
+
+Locked strategy alignment:
+- inventory-first architecture
+- tablet-first UX
+- append-only inventory ledger
+- UDQI quantity invariants
+- archive-only lifecycle
+- tabs as workspace selectors
+- no drawers/modals/dropdowns as primary operational patterns
+- AI assistive-only (never transactional authority)
+
+Ownership law:
+- Settings owns configuration lifecycle capabilities (categories, units, discounts, modifiers, policy placeholders)
+- Inventory workspace owns item/service lifecycle and stock movement operations
+- POS workspace owns cart/checkout/sales finalization and related inventory movement integration
+- Home workspace is entry and quick-actions only (no deep management ownership)
+
+Implementation rule:
+- no feature may enter implementation unless assigned to a capability in the Product Capability Map.
+
+## 0.10 Capability to Module to Workspace Mapping (Locked)
+
+Purpose:
+- This mapping defines structural placement for each feature across capability ownership, backend module ownership, mobile workspace exposure, and domain entity boundaries.
+- It prevents duplication, overlap, and architectural drift.
+
+Canonical source:
+- `docs/CAPABILITY_MODULE_WORKSPACE_MAPPING.md`
+
+Locked output schema:
+- Capability
+- Sub Capability
+- Backend Module
+- Mobile Workspace
+- Primary Screens
+- Domain Entities
+- System Invariants
+
+Locked workspaces:
+- Home
+- Inventory
+- POS
+- Settings
+
+Locked rule:
+- tabs are workspace selectors, not screen navigators.
+
+Implementation gate:
+- every feature must map capability, module, workspace, entities, and invariants before implementation.
+- multi-module features must declare one primary owner module.
+
+Safety constraints:
+- no new module creation without architecture review
+- no duplicated domain logic across modules
+- no UI features outside defined workspaces
+
 ## 1. Non‑Negotiable Product Principles
 
 Quick index:

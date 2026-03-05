@@ -7,6 +7,214 @@ Quick index:
 - See **2026-03-05 — BizAssist Engineering Playbook Lock** for operational development workflow.
 - See **2026-03-05 — Architecture Decision Records (ADR) System Lock** for canonical architecture-decision memory.
 - See **2026-03-05 — BizAssist Technical Standards Manual Lock** for implementation standards enforcement.
+- See **2026-03-05 — BizAssist Domain Model Bible Lock** for canonical domain entities and invariants.
+- See **2026-03-05 — BizAssist System Invariants & Guardrails Lock** for fail-fast integrity constraints.
+- See **2026-03-05 — BizAssist Feature Lifecycle Governance Lock** for mandatory stage-gate feature delivery.
+- See **2026-03-05 — BizAssist Product Capability Map Lock** for canonical capability ownership boundaries.
+- See **2026-03-05 — BizAssist Capability to Module to Workspace Mapping Lock** for structural feature placement governance.
+
+## 2026-03-05 — BizAssist Capability to Module to Workspace Mapping Lock
+
+### Memory Lock
+
+- Canonical policy name is **BizAssist Capability to Module to Workspace Mapping**.
+- Canonical masterplan reference is:
+  - `docs/MASTERPLAN_GUIDE.md` section `0.10 Capability to Module to Workspace Mapping (Locked)`
+- Canonical source document is:
+  - `docs/CAPABILITY_MODULE_WORKSPACE_MAPPING.md`
+
+### Locked Schema
+
+- Capability
+- Sub Capability
+- Backend Module
+- Mobile Workspace
+- Primary Screens
+- Domain Entities
+- System Invariants
+
+### Locked Platform Boundaries
+
+- Mobile workspaces are:
+  - Home
+  - Inventory
+  - POS
+  - Settings
+- Tabs are workspace selectors, not screen navigators.
+- Backend modules are feature-first and ownership-scoped.
+
+### Enforcement
+
+- Every feature must be mapped to capability, backend module, mobile workspace, entities, and invariants before implementation.
+- Multi-module features must declare one primary owner module.
+- No new modules without architecture review.
+- No duplicated domain logic across modules.
+- No UI features outside defined workspaces.
+
+## 2026-03-05 — BizAssist Product Capability Map Lock
+
+### Memory Lock
+
+- Canonical policy name is **BizAssist Product Capability Map**.
+- Canonical masterplan reference is:
+  - `docs/MASTERPLAN_GUIDE.md` section `0.9 Product Capability Map (Locked)`
+- Canonical source document is:
+  - `docs/PRODUCT_CAPABILITY_MAP.md`
+
+### Locked Scope
+
+- Capability coverage is defined using Level 1 -> Level 2 -> Level 3 structure only.
+- Every Level 3 capability must declare:
+  - owner surface
+  - mobile ownership
+  - API ownership
+  - DB ownership
+  - entities
+  - invariants
+  - exclusions/notes
+
+### Locked Alignment
+
+- inventory-first architecture
+- tablet-first UX
+- append-only inventory ledger
+- UDQI quantity invariants
+- archive-only lifecycle
+- tabs as workspace selectors
+- no drawers/modals/dropdowns as primary operational patterns
+- AI assistive-only behavior
+
+### Ownership Law Lock
+
+- Settings owns lifecycle of categories, units, discounts, modifiers, and policy placeholders.
+- Inventory workspace owns catalog operational lifecycle and stock movement processes.
+- POS workspace owns cart/checkout/sale finalization and inventory movement integration from checkout.
+- Home workspace is entry and quick-actions only.
+
+### Enforcement
+
+- No feature may enter implementation without capability assignment in the Product Capability Map.
+- Capability overlap must define a primary owner capability and secondary integration points.
+
+## 2026-03-05 — BizAssist Feature Lifecycle Governance Lock
+
+### Memory Lock
+
+- Canonical policy name is **BizAssist Feature Lifecycle Governance**.
+- Canonical masterplan reference is:
+  - `docs/MASTERPLAN_GUIDE.md` section `0.8 Feature Lifecycle Governance (Locked)`
+- Canonical source document is:
+  - `docs/FEATURE_LIFECYCLE_GOVERNANCE.md`
+
+### Locked Lifecycle
+
+- Idea -> Discovery -> Decision -> Feature Ticket -> Implementation -> Release -> Iteration
+- Stage skipping is prohibited.
+
+### Locked Stage Governance
+
+- Decision outcomes are constrained to `Approved`, `Rejected`, `Deferred`.
+- ADR coverage is required for architecture-impacting features.
+- Approved features require structured ticket fields:
+  - context anchor
+  - feature idea
+  - mode selection
+  - ownership boundaries
+  - technical constraints
+  - acceptance criteria
+  - regression targets
+
+### Enforcement
+
+- Implementation must align with:
+  - Architecture Lawbook
+  - ADRs
+  - Domain Model Bible
+  - System Invariants & Guardrails
+  - Technical Standards Manual
+- Release requires completed regression checks and invariant verification.
+- Significant behavior changes require architecture review.
+- Features must remain reversible (disable/rollback path).
+
+## 2026-03-05 — BizAssist System Invariants & Guardrails Lock
+
+### Memory Lock
+
+- Canonical policy name is **BizAssist System Invariants & Guardrails**.
+- Canonical masterplan reference is:
+  - `docs/MASTERPLAN_GUIDE.md` section `0.7 System Invariants & Guardrails (Locked)`
+- Canonical source document is:
+  - `docs/SYSTEM_INVARIANTS_GUARDRAILS.md`
+
+### Locked Invariant Scope
+
+- inventory invariants (movement-derived stock; no direct stock mutation)
+- quantity invariants (UDQI precision; fixed-point quantities; no float storage)
+- financial invariants (sale totals and payment reconciliation)
+- pricing invariants (time-of-sale price snapshot immutability)
+- modifier invariants (price-only effect)
+- sale finality invariants (immutable completed sales)
+- lifecycle invariants (archive-only transitions)
+- authorization invariants (authenticated user + activeBusinessId + membership)
+- media invariants (signed upload URLs and deterministic paths)
+
+### Guardrail Enforcement
+
+- Invariants are enforced at API validation, service-layer checks, and database constraints.
+- Client-side validation alone is insufficient.
+- Any invariant violation must fail immediately; silent correction is prohibited.
+
+### Observability
+
+- Every invariant violation must log:
+  - violation type
+  - affected entity
+  - user context
+  - request correlationId
+
+## 2026-03-05 — BizAssist Domain Model Bible Lock
+
+### Memory Lock
+
+- Canonical policy name is **BizAssist Domain Model Bible**.
+- Canonical masterplan reference is:
+  - `docs/MASTERPLAN_GUIDE.md` section `0.6 Domain Model Bible (Locked)`
+- Canonical source document is:
+  - `docs/DOMAIN_MODEL_BIBLE.md`
+
+### Locked Domain Principles
+
+- inventory-first architecture
+- append-only inventory ledger
+- UDQI quantity invariants using fixed-point integers governed by `Unit.precisionScale`
+- archive-only lifecycle (`ACTIVE`, `ARCHIVED`)
+
+### Canonical Entity Scope
+
+- User
+- Business
+- StaffMembership
+- Product
+- Unit
+- Category
+- ModifierSet
+- ModifierOption
+- Sale
+- SaleLineItem
+- Payment
+- InventoryMovement
+
+### Invariant Enforcement
+
+- Inventory is derived from movement ledger records; direct stock edits are prohibited.
+- Sale line pricing is immutable at time-of-sale snapshot.
+- Modifiers are price-only and must not mutate inventory quantities.
+- Completed sales are immutable and must preserve linked inventory movements.
+
+### Enforcement
+
+- Domain model compliance is mandatory across API, mobile, database schema, reporting, analytics, and AI read paths.
+- If implementation contradicts the Domain Model Bible, implementation must be corrected before merge.
 
 ## 2026-03-05 — BizAssist Technical Standards Manual Lock
 
