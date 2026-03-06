@@ -2,11 +2,9 @@
 // path: src/modules/inventory/components/InventorySearchBar.tsx
 
 import { useCallback, useMemo } from "react";
-import { StyleSheet, View } from "react-native";
-import { useTheme } from "react-native-paper";
+import { StyleSheet } from "react-native";
 
-import { BAISearchBar } from "@/components/ui/BAISearchBar";
-import { BAIIconButton } from "@/components/ui/BAIIconButton";
+import { BAISearchWithScanButton } from "@/components/ui/BAISearchWithScanButton";
 
 import { FIELD_LIMITS } from "@/shared/fieldLimits";
 
@@ -35,17 +33,10 @@ export function InventorySearchBar({
 	placeholder,
 	disabled,
 }: Props) {
-	const theme = useTheme();
-
-	const outline = theme.dark ? theme.colors.outline : theme.colors.outlineVariant ?? theme.colors.outline;
-
 	const ph = useMemo(() => placeholder ?? "Search ", [placeholder]);
 
 	const isDisabled = !!disabled;
 	const canSubmit = !isDisabled && typeof onSubmit === "function";
-	const canScan = !isDisabled && !!scanEnabled;
-
-	const iconColor = canScan ? theme.colors.onSurface : theme.colors.onSurfaceDisabled;
 
 	// BAISearchBar already enforces maxLength and caps input; keep a tight wrapper for parity
 	// and to make future governance changes local.
@@ -65,41 +56,22 @@ export function InventorySearchBar({
 	}, [canSubmit, onChangeText, onSubmit, value]);
 
 	return (
-		<View style={styles.row}>
-			<BAISearchBar
-				value={value}
-				onChangeText={handleChangeText}
-				placeholder={ph}
-				disabled={isDisabled}
-				maxLength={FIELD_LIMITS.search}
-				returnKeyType='search'
-				onSubmit={canSubmit ? handleSubmit : undefined}
-				height={INPUT_HEIGHT}
-				style={styles.search}
-				accessibilityLabel='Search inventory'
-			/>
-
-			<View style={styles.scanBtnWrapper}>
-				<BAIIconButton
-					icon='barcode-scan'
-					accessibilityLabel='Scan barcode'
-					onPress={onPressScan}
-					disabled={!canScan}
-					variant='outlined'
-					iconColor={iconColor}
-					style={[
-						styles.scanBtn,
-						{
-							width: INPUT_HEIGHT,
-							height: INPUT_HEIGHT,
-							borderRadius: INPUT_HEIGHT / 2,
-							borderColor: outline,
-							backgroundColor: theme.colors.surface,
-						},
-					]}
-				/>
-			</View>
-		</View>
+		<BAISearchWithScanButton
+			value={value}
+			onChangeText={handleChangeText}
+			onPressScan={onPressScan}
+			onSubmit={canSubmit ? handleSubmit : undefined}
+			scanEnabled={scanEnabled}
+			placeholder={ph}
+			disabled={isDisabled}
+			maxLength={FIELD_LIMITS.search}
+			height={INPUT_HEIGHT}
+			searchAccessibilityLabel='Search inventory'
+			scanAccessibilityLabel='Scan barcode'
+			style={styles.row}
+			searchStyle={styles.search}
+			scanButtonStyle={styles.scanBtn}
+		/>
 	);
 }
 
@@ -111,12 +83,6 @@ const styles = StyleSheet.create({
 	},
 	search: {
 		flex: 1,
-	},
-	scanBtnWrapper: {
-		height: INPUT_HEIGHT,
-		width: INPUT_HEIGHT,
-		borderRadius: INPUT_HEIGHT / 2,
-		overflow: "hidden",
 	},
 	scanBtn: {
 		// Keep icon button perfectly square and aligned with pill language

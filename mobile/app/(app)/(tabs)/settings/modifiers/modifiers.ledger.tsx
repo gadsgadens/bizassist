@@ -201,7 +201,7 @@ export function ModifiersLedgerScreen({
 	return (
 		<>
 			<Stack.Screen options={{ headerShown: false }} />
-			<BAIScreen tabbed padded={false} safeTop={false} safeBottom style={styles.root}>
+			<BAIScreen tabbed padded={false} safeTop={false} safeBottom={false} style={styles.root}>
 				<BAIHeader
 					title='Modifiers'
 					variant='back'
@@ -220,7 +220,16 @@ export function ModifiersLedgerScreen({
 					>
 						<BAISurface style={[styles.card, { borderColor }]} padded bordered>
 							<SettingsSectionTitle>Modifiers</SettingsSectionTitle>
-							<View style={styles.controls}>
+							<View
+								style={[
+									styles.controlsContainer,
+									{
+										borderColor,
+										backgroundColor: theme.colors.surfaceVariant ?? theme.colors.surface,
+									},
+								]}
+							>
+								<View style={styles.controls}>
 									<BAISearchBar
 										value={search}
 										onChangeText={(value) => {
@@ -239,6 +248,7 @@ export function ModifiersLedgerScreen({
 											countFormatter={(count) => formatCompactNumber(count, countryCode)}
 										/>
 									</View>
+								</View>
 							</View>
 
 							<View style={styles.listSection}>
@@ -308,9 +318,16 @@ const styles = StyleSheet.create({
 	root: { flex: 1 },
 	layoutScreen: { paddingHorizontal: 8, paddingTop: 0 },
 	card: { flex: 1, borderRadius: 18, gap: 6 },
-	controls: { gap: 4, paddingBottom: 2 },
+	controlsContainer: {
+		borderWidth: 1,
+		borderRadius: 14,
+		paddingHorizontal: 8,
+		paddingTop: 8,
+		paddingBottom: 6,
+	},
+	controls: { gap: 4 },
 	groupTabsWrap: {
-		paddingTop: 6,
+		paddingTop: 4,
 	},
 	listSection: { flex: 1, minHeight: 0 },
 	list: { flex: 1, minHeight: 0 },

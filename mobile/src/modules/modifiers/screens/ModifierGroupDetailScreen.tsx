@@ -63,13 +63,6 @@ export function ModifierGroupDetailScreen({ mode }: { mode: "settings" | "invent
 
 	const outline = theme.colors.outlineVariant ?? theme.colors.outline;
 	const surfaceAlt = theme.colors.surfaceVariant ?? theme.colors.surface;
-	const surfaceInteractive = useMemo(
-		() => ({
-			borderColor: outline,
-			backgroundColor: theme.colors.surface,
-		}),
-		[outline, theme.colors.surface],
-	);
 
 	const query = useQuery({
 		queryKey: ["modifiers", "group", groupId],
@@ -216,108 +209,106 @@ export function ModifierGroupDetailScreen({ mode }: { mode: "settings" | "invent
 			<BAIScreen tabbed padded={false} safeTop={false} safeBottom={false} style={styles.root}>
 				<View style={[styles.wrap, { paddingBottom: tabBarHeight + 8 }]}>
 					<View style={styles.content}>
-						<BAISurface bordered padded style={[styles.card, surfaceInteractive]}>
-							{query.isLoading ? (
-								<View style={styles.stateWrap}>
-									<BAIText variant='body'>Loading modifier set...</BAIText>
-								</View>
-							) : query.isError || !group ? (
-								<View style={styles.stateWrap}>
-									<BAIRetryButton onPress={() => query.refetch()}>Retry</BAIRetryButton>
-								</View>
-							) : (
-								<>
-									{!group.isArchived ? (
-										<View style={styles.topActionRow}>
-											<BAIButton
-												variant='outline'
-												intent='neutral'
-												shape='pill'
-												widthPreset='standard'
-												style={styles.topActionButton}
-												onPress={onBackToList}
-												disabled={busy.isBusy}
-											>
-												Cancel
-											</BAIButton>
-											<BAIButton
-												shape='pill'
-												widthPreset='standard'
-												style={styles.topActionButton}
-												onPress={onEditGroup}
-												disabled={busy.isBusy}
-											>
-												Edit
-											</BAIButton>
-										</View>
-									) : null}
-									<View style={[styles.tableHead, { borderBottomColor: outline }]}>
-										<BAIText variant='subtitle'>Modifiers</BAIText>
-										<BAIText variant='subtitle'>Availability</BAIText>
+						{query.isLoading ? (
+							<View style={styles.stateWrap}>
+								<BAIText variant='body'>Loading modifier set...</BAIText>
+							</View>
+						) : query.isError || !group ? (
+							<View style={styles.stateWrap}>
+								<BAIRetryButton onPress={() => query.refetch()}>Retry</BAIRetryButton>
+							</View>
+						) : (
+							<>
+								{!group.isArchived ? (
+									<View style={styles.topActionRow}>
+										<BAIButton
+											variant='outline'
+											intent='neutral'
+											shape='pill'
+											widthPreset='standard'
+											style={styles.topActionButton}
+											onPress={onBackToList}
+											disabled={busy.isBusy}
+										>
+											Cancel
+										</BAIButton>
+										<BAIButton
+											shape='pill'
+											widthPreset='standard'
+											style={styles.topActionButton}
+											onPress={onEditGroup}
+											disabled={busy.isBusy}
+										>
+											Edit
+										</BAIButton>
 									</View>
+								) : null}
+								<View style={[styles.tableHead, { borderBottomColor: outline }]}> 
+									<BAIText variant='subtitle'>Modifiers</BAIText>
+									<BAIText variant='subtitle'>Availability</BAIText>
+								</View>
 
-									<View style={styles.rowsListWrap}>
-										<FlatList
-											data={visibleOptions}
-											keyExtractor={(item) => item.id}
-											style={styles.rowsList}
-											renderItem={({ item }) => (
-												<BAISurface style={[styles.optionRow, { borderColor: outline, backgroundColor: surfaceAlt }]}>
-													<View style={styles.optionInlineContent}>
-														<BAIText
-															variant='body'
-															numberOfLines={1}
-															ellipsizeMode='tail'
-															style={styles.optionNameText}
-														>
-															{item.name}
-														</BAIText>
-														<View style={styles.optionAvailabilityInline}>
-															{item.isSoldOut ? (
-																<BAIText variant='body' style={{ color: theme.colors.error }}>
-																	Sold out
-																</BAIText>
-															) : (
-																<BAIText variant='body'>Available</BAIText>
-															)}
-															<Switch
-																value={!item.isSoldOut}
-																disabled={group.isArchived}
-																onValueChange={() => onToggleSoldOut(item.id, item.isSoldOut)}
-															/>
-														</View>
+								<View style={styles.rowsListWrap}>
+									<FlatList
+										data={visibleOptions}
+										keyExtractor={(item) => item.id}
+										style={styles.rowsList}
+										renderItem={({ item }) => (
+											<BAISurface style={[styles.optionRow, { borderColor: outline, backgroundColor: surfaceAlt }]}> 
+												<View style={styles.optionInlineContent}>
+													<BAIText
+														variant='body'
+														numberOfLines={1}
+														ellipsizeMode='tail'
+														style={styles.optionNameText}
+													>
+														{item.name}
+													</BAIText>
+													<View style={styles.optionAvailabilityInline}>
+														{item.isSoldOut ? (
+															<BAIText variant='body' style={{ color: theme.colors.error }}>
+																Sold out
+															</BAIText>
+														) : (
+															<BAIText variant='body'>Available</BAIText>
+														)}
+														<Switch
+															value={!item.isSoldOut}
+															disabled={group.isArchived}
+															onValueChange={() => onToggleSoldOut(item.id, item.isSoldOut)}
+														/>
 													</View>
-												</BAISurface>
-											)}
-											contentContainerStyle={styles.listContent}
-											keyboardShouldPersistTaps='handled'
-											showsVerticalScrollIndicator={false}
-											ListEmptyComponent={
-												<BAIText variant='body' muted style={styles.emptyOptionsText}>
-													No active modifiers.
-												</BAIText>
-											}
-											ListFooterComponent={
-												group.isArchived
-													? () => (
-															<View style={styles.restoreActionWrap}>
-																<BAIButton
-																	widthPreset='full'
-																	onPress={onOpenRestoreConfirm}
-																	disabled={busy.isBusy}
-																	labelStyle={styles.restoreActionLabel}
-																>
-																	Restore Modifier Set
-																</BAIButton>
-															</View>
-														)
-													: null
-											}
-										/>
-									</View>
-								</>
-							)}
-						</BAISurface>
+												</View>
+											</BAISurface>
+										)}
+										contentContainerStyle={styles.listContent}
+										keyboardShouldPersistTaps='handled'
+										showsVerticalScrollIndicator={false}
+										ListEmptyComponent={
+											<BAIText variant='body' muted style={styles.emptyOptionsText}>
+												No active modifiers.
+											</BAIText>
+										}
+										ListFooterComponent={
+											group.isArchived
+												? () => (
+														<View style={styles.restoreActionWrap}>
+															<BAIButton
+																widthPreset='full'
+																onPress={onOpenRestoreConfirm}
+																disabled={busy.isBusy}
+																labelStyle={styles.restoreActionLabel}
+															>
+																Restore Modifier Set
+															</BAIButton>
+														</View>
+													)
+												: null
+										}
+									/>
+								</View>
+							</>
+						)}
 					</View>
 				</View>
 			</BAIScreen>
@@ -403,8 +394,7 @@ export function ModifierGroupDetailScreen({ mode }: { mode: "settings" | "invent
 const styles = StyleSheet.create({
 	root: { flex: 1 },
 	wrap: { flex: 1, paddingHorizontal: 10 },
-	content: { flex: 1, width: "100%", maxWidth: 720, alignSelf: "center" },
-	card: { flex: 1, borderRadius: 18, gap: 8, marginTop: 0 },
+	content: { flex: 1, width: "100%", maxWidth: 720, alignSelf: "center", gap: 8 },
 	topActionRow: {
 		flexDirection: "row",
 		gap: 8,

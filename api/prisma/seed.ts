@@ -647,7 +647,7 @@ async function addFixtureCompany() {
 				});
 			}
 
-			const modifierGroups = [
+			const baseModifierGroups = [
 				{
 					id: IDS.modifiers.milkChoice,
 					name: "Milk Choice",
@@ -686,6 +686,29 @@ async function addFixtureCompany() {
 				},
 			] as const;
 
+			const extraModifierGroups = Array.from({ length: 24 }, (_, i) => {
+				const idx = i + 1;
+				return {
+					id: `66666666-6666-4666-8666-${String(700 + idx).padStart(12, "0")}`,
+					name: `Mock Modifier Set ${String(idx).padStart(2, "0")}`,
+					selectionType: ModifierSelectionType.MULTI,
+					isRequired: false,
+					minSelected: 0,
+					maxSelected: 3,
+					sortOrder: 4 + idx,
+				};
+			});
+
+			const modifierGroups: Array<{
+				id: string;
+				name: string;
+				selectionType: ModifierSelectionType;
+				isRequired: boolean;
+				minSelected: number;
+				maxSelected: number;
+				sortOrder: number;
+			}> = [...baseModifierGroups, ...extraModifierGroups];
+
 			for (const group of modifierGroups) {
 				await tx.modifierGroup.upsert({
 					where: { id: group.id },
@@ -713,7 +736,7 @@ async function addFixtureCompany() {
 				});
 			}
 
-			const modifierOptions = [
+			const baseModifierOptions = [
 				{
 					id: IDS.modifierOptions.oatMilk,
 					modifierGroupId: IDS.modifiers.milkChoice,
@@ -800,6 +823,41 @@ async function addFixtureCompany() {
 				},
 			] as const;
 
+			const extraModifierOptions = extraModifierGroups.flatMap((group, i) => {
+				const idx = i + 1;
+				return [
+					{
+						id: `77777777-7777-4777-8777-${String(900 + idx * 10 + 1).padStart(12, "0")}`,
+						modifierGroupId: group.id,
+						name: `Option A${idx}`,
+						priceDeltaMinor: BigInt(500),
+						sortOrder: 1,
+					},
+					{
+						id: `77777777-7777-4777-8777-${String(900 + idx * 10 + 2).padStart(12, "0")}`,
+						modifierGroupId: group.id,
+						name: `Option B${idx}`,
+						priceDeltaMinor: BigInt(1000),
+						sortOrder: 2,
+					},
+					{
+						id: `77777777-7777-4777-8777-${String(900 + idx * 10 + 3).padStart(12, "0")}`,
+						modifierGroupId: group.id,
+						name: `Option C${idx}`,
+						priceDeltaMinor: BigInt(1500),
+						sortOrder: 3,
+					},
+				];
+			});
+
+			const modifierOptions: Array<{
+				id: string;
+				modifierGroupId: string;
+				name: string;
+				priceDeltaMinor: bigint;
+				sortOrder: number;
+			}> = [...baseModifierOptions, ...extraModifierOptions];
+
 			for (const option of modifierOptions) {
 				await tx.modifierOption.upsert({
 					where: { id: option.id },
@@ -858,7 +916,7 @@ async function addFixtureCompany() {
 				});
 			}
 		},
-		{ timeout: 30_000 },
+		{ timeout: 120_000 },
 	);
 
 	console.log("[fixture] Added UI fixture company with inventory and products.");

@@ -24,6 +24,8 @@ export type BAIHeaderProps = {
 };
 
 const HEADER_BAR_HEIGHT = 56;
+const HEADER_ACTION_HEIGHT_XXL = 58;
+const HEADER_ACTION_WIDTH_XXL = 64;
 
 export function BAIHeader({
 	title,
@@ -90,14 +92,15 @@ export function BAIHeader({
 	}, [rightActionDisabled, rightSlot]);
 
 	const resolvedBarHeight = Math.max(56, barHeight || HEADER_BAR_HEIGHT);
-	const railSize = Math.max(56, resolvedBarHeight);
+	const railSize = Math.max(HEADER_ACTION_WIDTH_XXL, resolvedBarHeight);
+	const horizontalInset = Math.max(8, (paddingX || 16) - 4);
 
 	return (
 		<View
 			testID={testID}
 			style={[styles.root, { paddingTop: resolvedTopInset, backgroundColor: theme.colors.background }]}
 		>
-			<View style={[styles.bar, { height: resolvedBarHeight, paddingHorizontal: paddingX || 16 }]}>
+			<View style={[styles.bar, { height: resolvedBarHeight, paddingHorizontal: horizontalInset }]}> 
 				<View style={[styles.leftRail, { width: railSize }]}>
 					<BAIHeaderIconButton
 						variant={variant}
@@ -162,8 +165,9 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	rightPressable: {
-		minWidth: 44,
-		minHeight: 44,
+		width: HEADER_ACTION_WIDTH_XXL,
+		height: HEADER_ACTION_HEIGHT_XXL,
+		marginRight: 0,
 		alignItems: "center",
 		justifyContent: "center",
 	},

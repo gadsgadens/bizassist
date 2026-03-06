@@ -12,8 +12,8 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	FlatList,
 	Keyboard,
@@ -27,13 +27,15 @@ import { useTheme } from "react-native-paper";
 
 import { BAIButton } from "@/components/ui/BAIButton";
 import { BAICTAButton } from "@/components/ui/BAICTAButton";
-import { BAISearchBar } from "@/components/ui/BAISearchBar";
+import { BAIGroupTabs } from "@/components/ui/BAIGroupTabs";
+import { BAISearchWithScanButton } from "@/components/ui/BAISearchWithScanButton";
 import { BAIScreen } from "@/components/ui/BAIScreen";
 import { BAISurface } from "@/components/ui/BAISurface";
 import { BAIText } from "@/components/ui/BAIText";
 
 import { useAppBusy } from "@/hooks/useAppBusy";
 import { useActiveBusinessMeta } from "@/modules/business/useActiveBusinessMeta";
+import { formatCompactNumber } from "@/lib/locale/businessLocale";
 import type { CatalogProduct } from "@/modules/catalog/catalog.types";
 import { inventoryApi } from "@/modules/inventory/inventory.api";
 import { InventoryRow } from "@/modules/inventory/InventoryRow";
@@ -77,6 +79,8 @@ type CartLine = {
 	maxQty?: string; // decimal string
 	trackInventory?: boolean;
 };
+
+type CatalogGroupTab = "ITEMS" | "SERVICES";
 
 // POS layout + design lock (do not change without explicit approval).
 export const POS_LAYOUT_LOCK = "LOCKED_V1" as const;
@@ -304,10 +308,11 @@ function toPosCatalogInventoryRowItem(product: CatalogProduct, onHandRaw: string
 
 export default function PosTablet() {
 	const router = useRouter();
+	const params = useLocalSearchParams<{ scannedBarcode?: string }>();
 	const theme = useTheme();
 	const borderColor = theme.colors.outlineVariant ?? theme.colors.outline;
 
-	const { currencyCode, businessName } = useActiveBusinessMeta();
+	const { currencyCode, businessName, countryCode } = useActiveBusinessMeta();
 	const { withBusy } = useAppBusy();
 
 	// Primary nav safety gate (canonical hook)
@@ -326,6 +331,7 @@ export default function PosTablet() {
 	const dismissKeyboard = useCallback(() => Keyboard.dismiss(), []);
 
 	const [q, setQ] = useState("");
+	const [catalogGroup, setCatalogGroup] = useState<CatalogGroupTab>("ITEMS");
 	const trimmedQ = q.trim();
 
 	const [cart, setCart] = useState<Record<string, CartLine>>({});
@@ -348,6 +354,36 @@ export default function PosTablet() {
 
 	const cartLines = useMemo(() => Object.values(cart), [cart]);
 	const itemCount = useMemo(() => cartLines.length, [cartLines]);
+	const itemCatalogCount = useMemo(
+		() => items.filter((product) => String(product.type ?? "PHYSICAL").toUpperCase() !== "SERVICE").length,
+		[items],
+	);
+	const serviceCatalogCount = useMemo(
+		() => items.filter((product) => String(product.type ?? "PHYSICAL").toUpperCase() === "SERVICE").length,
+		[items],
+	);
+	const defaultCatalogGroup = useMemo<CatalogGroupTab>(() => {
+		if (itemCatalogCount === 0 && serviceCatalogCount > 0) return "SERVICES";
+		return "ITEMS";
+	}, [itemCatalogCount, serviceCatalogCount]);
+	const catalogGroupTabs = useMemo(
+		() =>
+			[
+				{ label: "Items", value: "ITEMS", count: itemCatalogCount },
+				{ label: "Services", value: "SERVICES", count: serviceCatalogCount },
+			] as const,
+		[itemCatalogCount, serviceCatalogCount],
+	);
+	useEffect(() => {
+		setCatalogGroup(defaultCatalogGroup);
+	}, [defaultCatalogGroup]);
+	const visibleCatalogItems = useMemo(() => {
+		const showServices = catalogGroup === "SERVICES";
+		return items.filter((product) => {
+			const isService = String(product.type ?? "PHYSICAL").toUpperCase() === "SERVICE";
+			return showServices ? isService : !isService;
+		});
+	}, [catalogGroup, items]);
 
 	const subtotalMinor = useMemo(() => {
 		return cartLines.reduce((sum, l) => {
@@ -392,6 +428,15 @@ export default function PosTablet() {
 	const onRefresh = useCallback(() => {
 		productsQuery.refetch();
 	}, [productsQuery]);
+
+	const onOpenScanner = useCallback(() => {
+		if (disabled) return;
+		if (!lockNav()) return;
+		router.push({
+			pathname: "/(app)/(tabs)/inventory/scan" as any,
+			params: { returnTo: "/(app)/(tabs)/pos" },
+		} as any);
+	}, [disabled, lockNav, router]);
 
 	const switchWorkspaceReplace = useCallback(
 		(path: string) => {
@@ -515,8 +560,17 @@ export default function PosTablet() {
 		}, [setQty]),
 	);
 
-	const showCatalogEmptyCta = !trimmedQ && items.length === 0 && !productsQuery.isError;
-	const isTrulyError = !!productsQuery.isError && items.length === 0;
+	useEffect(() => {
+		const scanned = typeof params.scannedBarcode === "string" ? params.scannedBarcode.trim() : "";
+		if (!scanned) return;
+		const cleaned = sanitizeSearchInput(scanned);
+		setQ(cleaned.length > FIELD_LIMITS.search ? cleaned.slice(0, FIELD_LIMITS.search) : cleaned);
+		router.setParams({ scannedBarcode: undefined } as any);
+	}, [params.scannedBarcode, router]);
+
+	const showCatalogEmptyCta = !trimmedQ && visibleCatalogItems.length === 0 && !productsQuery.isError;
+	const isSearchEmptyState = !!trimmedQ && visibleCatalogItems.length === 0 && !productsQuery.isError;
+	const isTrulyError = !!productsQuery.isError && visibleCatalogItems.length === 0;
 	const syncLabel = productsQuery.isFetching ? "Syncing..." : isTrulyError ? "Sync failed" : "Synced";
 	const syncColor = isTrulyError ? theme.colors.error : (theme.colors.onSurfaceVariant ?? theme.colors.onSurface);
 	const syncBg = isTrulyError
@@ -577,14 +631,17 @@ export default function PosTablet() {
 								) : null}
 							</View>
 							<View style={styles.searchWrap}>
-								<BAISearchBar
+								<BAISearchWithScanButton
 									value={q}
 									onChangeText={(v) => {
 										const cleaned = sanitizeSearchInput(v);
 										setQ(cleaned.length > FIELD_LIMITS.search ? cleaned.slice(0, FIELD_LIMITS.search) : cleaned);
 									}}
+									onPressScan={onOpenScanner}
+									scanEnabled={!disabled}
 									placeholder='Search items'
 									maxLength={FIELD_LIMITS.search}
+									searchAccessibilityLabel='Search items'
 								/>
 							</View>
 						</View>
@@ -602,28 +659,43 @@ export default function PosTablet() {
 							<View style={styles.paneHeader}>
 								<BAIText variant='title'>Catalog</BAIText>
 								<BAIText variant='caption' muted>
-									{items.length} items
+									{visibleCatalogItems.length} items
 								</BAIText>
 							</View>
 
-							{items.length === 0 ? (
+							<View style={styles.catalogFilterTabsWrap}>
+								<BAIGroupTabs<CatalogGroupTab>
+									value={catalogGroup}
+									onChange={setCatalogGroup}
+									disabled={disabled}
+									tabs={catalogGroupTabs}
+									countFormatter={(count) => formatCompactNumber(count, countryCode)}
+								/>
+							</View>
+
+							{visibleCatalogItems.length === 0 ? (
 								<View style={styles.emptyPane}>
 									<BAIText variant='body' muted>
-										{isTrulyError ? "Unable to load catalog." : "No items yet."}
+										{isTrulyError ? "Unable to load catalog." : isSearchEmptyState ? "No results found." : "No items yet."}
 									</BAIText>
+									{isSearchEmptyState ? (
+										<BAIText variant='caption' muted>
+											Try a different search term or scan a different barcode.
+										</BAIText>
+									) : null}
 									{showCatalogEmptyCta ? (
 										<BAIButton onPress={() => switchWorkspaceReplace("/(app)/(tabs)/inventory")}>
 											Go To Inventory
 										</BAIButton>
-									) : (
+									) : isTrulyError ? (
 										<BAIButton onPress={() => productsQuery.refetch()} disabled={disabled}>
 											Retry
 										</BAIButton>
-									)}
+									) : null}
 								</View>
 							) : (
 								<FlatList
-									data={items}
+									data={visibleCatalogItems}
 									keyExtractor={(p) => p.id}
 									contentContainerStyle={styles.listContent}
 									showsVerticalScrollIndicator={false}
@@ -879,6 +951,9 @@ const styles = StyleSheet.create({
 	},
 	searchWrap: { flex: 1, maxWidth: 420 },
 	headerRight: { flexDirection: "row", gap: 10 },
+	catalogFilterTabsWrap: {
+		paddingBottom: POS_SECTION_GAP,
+	},
 
 	body: { flex: 1, flexDirection: "row" },
 

@@ -18,8 +18,8 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	FlatList,
 	Keyboard,
@@ -33,8 +33,9 @@ import { useTheme } from "react-native-paper";
 
 import { BAIButton } from "@/components/ui/BAIButton";
 import { BAICTAButton } from "@/components/ui/BAICTAButton";
+import { BAIGovernedScrollableLayout } from "@/components/ui/BAIGovernedScrollableLayout";
 import { BAIGroupTabs } from "@/components/ui/BAIGroupTabs";
-import { BAISearchBar } from "@/components/ui/BAISearchBar";
+import { BAISearchWithScanButton } from "@/components/ui/BAISearchWithScanButton";
 import { BAIScreen } from "@/components/ui/BAIScreen";
 import { BAISurface } from "@/components/ui/BAISurface";
 import { BAIText } from "@/components/ui/BAIText";
@@ -88,13 +89,14 @@ type CartLine = {
 };
 
 type PosTab = "CATALOG" | "CART";
+type CatalogGroupTab = "ITEMS" | "SERVICES";
 
 // POS layout + design lock (do not change without explicit approval).
 export const POS_LAYOUT_LOCK = "LOCKED_V1" as const;
 const POS_GUTTER = 12;
-const POS_HEADER_CARD_PAD_TOP = 12;
-const POS_HEADER_CARD_PAD_BOTTOM = 12;
-const POS_HEADER_PAD_Y = 10;
+const POS_HEADER_CARD_PAD_TOP = 8;
+const POS_HEADER_CARD_PAD_BOTTOM = 8;
+const POS_HEADER_PAD_Y = 6;
 const POS_CARD_RADIUS = 16;
 const POS_CART_RADIUS = 18;
 const POS_BORDER_WIDTH = StyleSheet.hairlineWidth;
@@ -318,6 +320,7 @@ function toPosCatalogInventoryRowItem(product: CatalogProduct, onHandRaw: string
 
 export default function PosPhone() {
 	const router = useRouter();
+	const params = useLocalSearchParams<{ scannedBarcode?: string }>();
 	const theme = useTheme();
 	const borderColor = theme.colors.outlineVariant ?? theme.colors.outline;
 
@@ -339,6 +342,7 @@ export default function PosPhone() {
 	const disabled = !canNavigate;
 
 	const [tab, setTab] = useState<PosTab>("CATALOG");
+	const [catalogGroup, setCatalogGroup] = useState<CatalogGroupTab>("ITEMS");
 	const [q, setQ] = useState("");
 	const trimmedQ = q.trim();
 
@@ -363,6 +367,36 @@ export default function PosPhone() {
 
 	const cartLines = useMemo(() => Object.values(cart), [cart]);
 	const itemCount = useMemo(() => cartLines.length, [cartLines]);
+	const itemCatalogCount = useMemo(
+		() => items.filter((product) => String(product.type ?? "PHYSICAL").toUpperCase() !== "SERVICE").length,
+		[items],
+	);
+	const serviceCatalogCount = useMemo(
+		() => items.filter((product) => String(product.type ?? "PHYSICAL").toUpperCase() === "SERVICE").length,
+		[items],
+	);
+	const defaultCatalogGroup = useMemo<CatalogGroupTab>(() => {
+		if (itemCatalogCount === 0 && serviceCatalogCount > 0) return "SERVICES";
+		return "ITEMS";
+	}, [itemCatalogCount, serviceCatalogCount]);
+	const catalogGroupTabs = useMemo(
+		() =>
+			[
+				{ label: "Items", value: "ITEMS", count: itemCatalogCount },
+				{ label: "Services", value: "SERVICES", count: serviceCatalogCount },
+			] as const,
+		[itemCatalogCount, serviceCatalogCount],
+	);
+	useEffect(() => {
+		setCatalogGroup(defaultCatalogGroup);
+	}, [defaultCatalogGroup]);
+	const visibleCatalogItems = useMemo(() => {
+		const showServices = catalogGroup === "SERVICES";
+		return items.filter((product) => {
+			const isService = String(product.type ?? "PHYSICAL").toUpperCase() === "SERVICE";
+			return showServices ? isService : !isService;
+		});
+	}, [catalogGroup, items]);
 	const posTabs = useMemo(
 		() =>
 			[
@@ -416,6 +450,15 @@ export default function PosPhone() {
 	const onRefresh = useCallback(() => {
 		productsQuery.refetch();
 	}, [productsQuery]);
+
+	const onOpenScanner = useCallback(() => {
+		if (disabled) return;
+		if (!lockNav()) return;
+		router.push({
+			pathname: "/(app)/(tabs)/inventory/scan" as any,
+			params: { returnTo: "/(app)/(tabs)/pos" },
+		} as any);
+	}, [disabled, lockNav, router]);
 
 	const switchWorkspaceReplace = useCallback(
 		(path: string) => {
@@ -540,8 +583,17 @@ export default function PosPhone() {
 		}, [setQty]),
 	);
 
-	const showCatalogEmptyCta = !trimmedQ && items.length === 0 && !productsQuery.isError;
-	const isTrulyError = !!productsQuery.isError && items.length === 0;
+	useEffect(() => {
+		const scanned = typeof params.scannedBarcode === "string" ? params.scannedBarcode.trim() : "";
+		if (!scanned) return;
+		const cleaned = sanitizeSearchInput(scanned);
+		setQ(cleaned.length > FIELD_LIMITS.search ? cleaned.slice(0, FIELD_LIMITS.search) : cleaned);
+		router.setParams({ scannedBarcode: undefined } as any);
+	}, [params.scannedBarcode, router]);
+
+	const showCatalogEmptyCta = !trimmedQ && visibleCatalogItems.length === 0 && !productsQuery.isError;
+	const isSearchEmptyState = !!trimmedQ && visibleCatalogItems.length === 0 && !productsQuery.isError;
+	const isTrulyError = !!productsQuery.isError && visibleCatalogItems.length === 0;
 	const syncLabel = productsQuery.isFetching ? "Syncing..." : isTrulyError ? "Sync failed" : "Synced";
 	const syncColor = isTrulyError ? theme.colors.error : (theme.colors.onSurfaceVariant ?? theme.colors.onSurface);
 	const syncBg = isTrulyError
@@ -715,107 +767,164 @@ export default function PosPhone() {
 		<BAIScreen tabbed padded={false} safeBottom={false} safeAreaGradientBottom style={styles.root}>
 			<TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
 				<BAISurface style={[styles.container, styles.screenSurface]} padded={false} bordered={false} radius={0}>
-					<View style={[styles.posHeaderCard, { borderColor, backgroundColor: theme.colors.surface }]}>
-						<View style={styles.header}>
-							<View style={styles.headerLeft}>
-								<View style={styles.headerTitleRow}>
-									<BAIText variant='title'>POS</BAIText>
-									<View style={[styles.headerSyncBadge, { backgroundColor: syncBg }]}>
-										<BAIText variant='caption' muted={false} style={{ color: syncColor, fontWeight: "600" }}>
-											{syncLabel}
-										</BAIText>
+					<BAIGovernedScrollableLayout
+						top={
+							<View style={styles.headerSection}>
+								<View style={styles.header}>
+									<View style={styles.headerLeft}>
+										<View style={styles.headerTitleRow}>
+											<BAIText variant='title'>POS</BAIText>
+											<View style={[styles.headerSyncBadge, { backgroundColor: syncBg }]}>
+												<BAIText variant='caption' muted={false} style={{ color: syncColor, fontWeight: "600" }}>
+													{syncLabel}
+												</BAIText>
+											</View>
+										</View>
+										{businessName ? (
+											<BAIText variant='subtitle' muted numberOfLines={1}>
+												{businessName}
+											</BAIText>
+										) : null}
+									</View>
+									<View style={styles.headerRight}>
+										<BAIButton shape='pill' onPress={() => setCart({})} disabled={disabled || cartLines.length === 0}>
+											Clear
+										</BAIButton>
 									</View>
 								</View>
-								{businessName ? (
-									<BAIText variant='subtitle' muted numberOfLines={1}>
-										{businessName}
-									</BAIText>
+
+								{tab === "CATALOG" ? (
+									<>
+										<View style={styles.searchWrap}>
+											<BAISearchWithScanButton
+												value={q}
+												onChangeText={(v) => {
+													const cleaned = sanitizeSearchInput(v);
+													setQ(cleaned.length > FIELD_LIMITS.search ? cleaned.slice(0, FIELD_LIMITS.search) : cleaned);
+												}}
+												onPressScan={onOpenScanner}
+												scanEnabled={!disabled}
+												placeholder='Search items'
+												maxLength={FIELD_LIMITS.search}
+												searchAccessibilityLabel='Search items'
+											/>
+										</View>
+
+										<View style={styles.catalogFilterTabsWrap}>
+											<BAIGroupTabs<CatalogGroupTab>
+												value={catalogGroup}
+												onChange={setCatalogGroup}
+												disabled={disabled}
+												tabs={catalogGroupTabs}
+												countFormatter={(count) => formatCompactNumber(count, countryCode)}
+											/>
+										</View>
+									</>
 								) : null}
 							</View>
-							<View style={styles.headerRight}>
-								<BAIButton shape='pill' onPress={() => setCart({})} disabled={disabled || cartLines.length === 0}>
-									Clear
-								</BAIButton>
-							</View>
-						</View>
-
-						<View style={styles.tabsWrap}>
-							<BAIGroupTabs<PosTab>
-								value={tab}
-								onChange={setTab}
-								disabled={disabled}
-								tabs={posTabs}
-								countFormatter={(count) => formatCompactNumber(count, countryCode)}
-							/>
-						</View>
-
-						{tab === "CATALOG" ? (
-							<View style={styles.searchWrap}>
-								<BAISearchBar
-									value={q}
-									onChangeText={(v) => {
-										const cleaned = sanitizeSearchInput(v);
-										setQ(cleaned.length > FIELD_LIMITS.search ? cleaned.slice(0, FIELD_LIMITS.search) : cleaned);
-									}}
-									placeholder='Search items'
-									maxLength={FIELD_LIMITS.search}
-								/>
-							</View>
-						) : null}
-					</View>
-
-					{tab === "CATALOG" ? (
-						<>
-							<PosCatalogListShell
-								countLabel={`${items.length} items`}
-								showTitleAndCount={false}
-								showSyncBadge={false}
-								isLoading={productsQuery.isLoading}
-								isFetching={productsQuery.isFetching}
-								isError={isTrulyError}
-								onRetry={() => productsQuery.refetch()}
-								emptyTitle='No items yet'
-								emptyBody='Create items in Inventory to start selling.'
-								primaryCtaLabel={showCatalogEmptyCta ? "Go To Inventory" : undefined}
-								onPrimaryCta={showCatalogEmptyCta ? () => switchWorkspaceReplace("/(app)/(tabs)/inventory") : undefined}
-							>
-								{items.length === 0 ? null : (
-									<FlatList
-										data={items}
-										keyExtractor={(p) => p.id}
-										contentContainerStyle={styles.listContent}
-										showsVerticalScrollIndicator={false}
-										refreshControl={
-											<RefreshControl
-												refreshing={productsQuery.isFetching && !productsQuery.isLoading}
-												onRefresh={onRefresh}
-											/>
+						}
+						scrollArea={
+							<View style={styles.scrollArea}>
+								{tab === "CATALOG" ? (
+									<PosCatalogListShell
+										countLabel={`${visibleCatalogItems.length} items`}
+										showTitleAndCount={false}
+										showSyncBadge={false}
+										containerStyle={styles.listShellNoContainer}
+										isLoading={productsQuery.isLoading}
+										isFetching={productsQuery.isFetching}
+										isError={isTrulyError}
+										onRetry={() => productsQuery.refetch()}
+										emptyTitle={isSearchEmptyState ? "No results found" : "No items yet"}
+										emptyBody={
+											isSearchEmptyState
+												? "Try a different search term or scan a different barcode."
+												: "Create items in Inventory to start selling."
 										}
-										ItemSeparatorComponent={() => <View style={styles.listItemGap} />}
-										renderItem={({ item }) => {
-											const inCartLine = cart[item.id];
-											const onHandRaw = resolveCatalogOnHandRaw(item, inCartLine);
-											const status = resolveCatalogStatus(item, inCartLine);
-											const rowItem = toPosCatalogInventoryRowItem(item, onHandRaw);
-											return (
-												<InventoryRow
-													item={rowItem}
-													showOnHandUnit={false}
-													categoryColor={item.categoryColor}
-													onPress={() => addToCart(item)}
-													disabled={
-														disabled || (status.disabled && !inCartLine) || loadingModifierProductId === item.id
-													}
-												/>
-											);
-										}}
-									/>
-								)}
-							</PosCatalogListShell>
+										primaryCtaLabel={showCatalogEmptyCta ? "Go To Inventory" : undefined}
+										onPrimaryCta={
+											showCatalogEmptyCta ? () => switchWorkspaceReplace("/(app)/(tabs)/inventory") : undefined
+										}
+									>
+										{visibleCatalogItems.length === 0 ? null : (
+											<FlatList
+												data={visibleCatalogItems}
+												keyExtractor={(p) => p.id}
+												contentContainerStyle={styles.listContent}
+												showsVerticalScrollIndicator={false}
+												refreshControl={
+													<RefreshControl
+														refreshing={productsQuery.isFetching && !productsQuery.isLoading}
+														onRefresh={onRefresh}
+													/>
+												}
+												ItemSeparatorComponent={() => <View style={styles.listItemGap} />}
+												renderItem={({ item }) => {
+													const inCartLine = cart[item.id];
+													const onHandRaw = resolveCatalogOnHandRaw(item, inCartLine);
+													const status = resolveCatalogStatus(item, inCartLine);
+													const rowItem = toPosCatalogInventoryRowItem(item, onHandRaw);
+													return (
+														<InventoryRow
+															item={rowItem}
+															showOnHandUnit={false}
+															categoryColor={item.categoryColor}
+															onPress={() => addToCart(item)}
+															disabled={
+																disabled || (status.disabled && !inCartLine) || loadingModifierProductId === item.id
+															}
+														/>
+													);
+												}}
+											/>
+										)}
+									</PosCatalogListShell>
+								) : (
+									<View style={[styles.cartSection, { borderColor, backgroundColor: theme.colors.surface }]}>
+										<View style={[styles.cartHeader, { borderBottomColor: borderColor }]}>
+											<View>
+												<BAIText variant='title'>Cart</BAIText>
+												<BAIText variant='caption' muted>
+													{itemCount} items
+												</BAIText>
+											</View>
+										</View>
 
-							{/* Cart summary footer on Catalog tab */}
-							{cartLines.length > 0 ? (
-								<View style={[styles.cartSummary, { borderColor, backgroundColor: theme.colors.surface }]}>
+										<View style={styles.cartBody}>
+											{cartLines.length === 0 ? (
+												<View style={styles.emptyCart}>
+													<BAIText variant='body' muted>
+														Your cart is empty.
+													</BAIText>
+													<BAIButton
+														widthPreset='standard'
+														onPress={() => setTab("CATALOG")}
+														disabled={disabled}
+														style={{ minWidth: 180 }}
+													>
+														Browse Catalog
+													</BAIButton>
+												</View>
+											) : (
+												<FlatList
+													data={cartLines}
+													keyExtractor={(l) =>
+														`${l.productId}:${(l.selectedModifierOptionIds ?? []).slice().sort().join(",")}`
+													}
+													contentContainerStyle={styles.cartList}
+													showsVerticalScrollIndicator={false}
+													ItemSeparatorComponent={() => <View style={[styles.sep, { backgroundColor: borderColor }]} />}
+													renderItem={({ item }) => renderCartRow(item)}
+												/>
+											)}
+										</View>
+									</View>
+								)}
+							</View>
+						}
+						bottom={
+							tab === "CATALOG" && cartLines.length > 0 ? (
+								<View style={[styles.cartSummary, { borderColor, backgroundColor: theme.colors.surface }]}> 
 									<View style={styles.cartSummaryLeft}>
 										<BAIText variant='subtitle' numberOfLines={1}>
 											Cart Total
@@ -829,67 +938,26 @@ export default function PosPhone() {
 										View Cart
 									</BAIButton>
 								</View>
-							) : null}
-						</>
-					) : (
-						<>
-							<View style={[styles.cartSection, { borderColor, backgroundColor: theme.colors.surface }]}>
-								<View style={[styles.cartHeader, { borderBottomColor: borderColor }]}>
-									<View>
-										<BAIText variant='title'>Cart</BAIText>
-										<BAIText variant='caption' muted>
-											{itemCount} items
-										</BAIText>
-									</View>
-								</View>
-
-								<View style={styles.cartBody}>
-									{cartLines.length === 0 ? (
-										<View style={styles.emptyCart}>
-											<BAIText variant='body' muted>
-												Your cart is empty.
-											</BAIText>
-											<BAIButton
-												widthPreset='standard'
-												onPress={() => setTab("CATALOG")}
-												disabled={disabled}
-												style={{ minWidth: 180 }}
-											>
-												Browse Catalog
-											</BAIButton>
+							) : tab === "CART" ? (
+								<View style={[styles.checkoutSection, { borderColor, backgroundColor: theme.colors.surface }]}> 
+									<View style={styles.checkoutArea}>
+										<View style={styles.checkoutRow}>
+											<BAIText variant='body'>Total</BAIText>
+											<BAIText variant='title'>{subtotalCompact}</BAIText>
 										</View>
-									) : (
-										<FlatList
-											data={cartLines}
-											keyExtractor={(l) =>
-												`${l.productId}:${(l.selectedModifierOptionIds ?? []).slice().sort().join(",")}`
-											}
-											contentContainerStyle={styles.cartList}
-											showsVerticalScrollIndicator={false}
-											ItemSeparatorComponent={() => <View style={[styles.sep, { backgroundColor: borderColor }]} />}
-											renderItem={({ item }) => renderCartRow(item)}
-										/>
-									)}
-								</View>
-							</View>
-							<View style={[styles.checkoutSection, { borderColor, backgroundColor: theme.colors.surface }]}>
-								<View style={styles.checkoutArea}>
-									<View style={styles.checkoutRow}>
-										<BAIText variant='body'>Total</BAIText>
-										<BAIText variant='title'>{subtotalCompact}</BAIText>
-									</View>
 
-									<BAICTAButton disabled={!canCheckout} onPress={() => checkoutMutation.mutate()}>
-										{canCheckout
-											? `Charge ${subtotalCompact}`
-											: cartLines.length === 0
-												? "Add Items To Cart"
-												: "Charging..."}
-									</BAICTAButton>
+										<BAICTAButton disabled={!canCheckout} onPress={() => checkoutMutation.mutate()}>
+											{canCheckout
+												? `Charge ${subtotalCompact}`
+												: cartLines.length === 0
+													? "Add Items To Cart"
+													: "Charging..."}
+										</BAICTAButton>
+									</View>
 								</View>
-							</View>
-						</>
-					)}
+							) : null
+						}
+					/>
 					<PosModifiersPickerSheet
 						visible={modifierPickerVisible}
 						groups={modifierPickerGroups}
@@ -929,12 +997,10 @@ const styles = StyleSheet.create({
 		backgroundColor: "transparent",
 		marginBottom: 0,
 	},
-	posHeaderCard: {
-		paddingHorizontal: POS_GUTTER,
+	headerSection: {
+		paddingHorizontal: 0,
 		paddingTop: POS_HEADER_CARD_PAD_TOP,
 		paddingBottom: POS_HEADER_CARD_PAD_BOTTOM,
-		borderWidth: POS_BORDER_WIDTH,
-		borderRadius: POS_CARD_RADIUS,
 		marginBottom: POS_SECTION_GAP,
 	},
 	header: {
@@ -957,11 +1023,18 @@ const styles = StyleSheet.create({
 	},
 	headerRight: { flexDirection: "row", gap: 10 },
 
+	scrollArea: { flex: 1, minHeight: 0 },
 	tabsWrap: { paddingHorizontal: 0 },
-	searchWrap: { marginTop: 10 },
+	searchWrap: { marginTop: 6 },
+	catalogFilterTabsWrap: { marginTop: 6 },
 	listContent: { paddingBottom: 16 },
 	listItemGap: { height: 8 },
 	sep: { height: POS_BORDER_WIDTH },
+	listShellNoContainer: {
+		backgroundColor: "transparent",
+		borderWidth: 0,
+		borderRadius: 0,
+	},
 
 	cartSummary: {
 		paddingHorizontal: POS_GUTTER,

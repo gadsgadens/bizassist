@@ -1,10 +1,11 @@
 // path: app/(app)/(tabs)/inventory/scan.tsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, StyleSheet, AppState, type AppStateStatus } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useTheme } from "react-native-paper";
 import { CameraView, useCameraPermissions } from "expo-camera";
 
+import { BAIHeader } from "@/components/ui/BAIHeader";
 import { BAIScreen } from "@/components/ui/BAIScreen";
 import { BAISurface } from "@/components/ui/BAISurface";
 import { BAIText } from "@/components/ui/BAIText";
@@ -144,20 +145,24 @@ export default function InventoryScanScreen() {
 
 	if (!permission) {
 		return (
-			<BAIScreen padded={false} contentContainerStyle={styles.center}>
-				<BAISurface style={styles.card}>
-					<BAIText variant='subtitle'>Preparing camera…</BAIText>
-					<BAIText variant='body' muted>
-						One moment.
-					</BAIText>
+			<>
+				<Stack.Screen options={{ headerShown: false }} />
+				<BAIScreen padded={false} safeTop={false} contentContainerStyle={styles.center}>
+					<BAIHeader title='Scan' variant='back' onLeftPress={onCancel} />
+					<BAISurface style={styles.card}>
+						<BAIText variant='subtitle'>Preparing camera...</BAIText>
+						<BAIText variant='body' muted>
+							One moment.
+						</BAIText>
 
-					<View style={styles.actions}>
-						<BAIButton mode='outlined' onPress={onCancel} shape='pill' widthPreset='standard' intent='neutral'>
-							Cancel
-						</BAIButton>
-					</View>
-				</BAISurface>
-			</BAIScreen>
+						<View style={styles.actions}>
+							<BAIButton mode='outlined' onPress={onCancel} shape='pill' widthPreset='standard' intent='neutral'>
+								Cancel
+							</BAIButton>
+						</View>
+					</BAISurface>
+				</BAIScreen>
+			</>
 		);
 	}
 
@@ -170,77 +175,73 @@ export default function InventoryScanScreen() {
 				: "Enable camera access to scan barcodes.");
 
 		return (
-			<BAIScreen padded={false} safeTop={false} safeBottom={false} contentContainerStyle={styles.center}>
-				<BAISurface style={styles.card}>
-					<BAIText variant='subtitle'>Camera permission required</BAIText>
-					<BAIText variant='body' muted>
-						{permissionMessage}
-					</BAIText>
+			<>
+				<Stack.Screen options={{ headerShown: false }} />
+				<BAIScreen padded={false} safeTop={false} safeBottom={false} contentContainerStyle={styles.center}>
+					<BAIHeader title='Scan' variant='back' onLeftPress={onCancel} />
+					<BAISurface style={styles.card}>
+						<BAIText variant='subtitle'>Camera permission required</BAIText>
+						<BAIText variant='body' muted>
+							{permissionMessage}
+						</BAIText>
 
-					<View style={styles.actions}>
-						<BAICTAButton onPress={onRequestCameraPermission}>Allow Camera</BAICTAButton>
-						{isPermissionBlocked ? (
-							<BAIButton mode='outlined' onPress={onOpenSettings} shape='pill' widthPreset='standard' intent='primary'>
-								Open Settings
+						<View style={styles.actions}>
+							<BAICTAButton onPress={onRequestCameraPermission}>Allow Camera</BAICTAButton>
+							{isPermissionBlocked ? (
+								<BAIButton mode='outlined' onPress={onOpenSettings} shape='pill' widthPreset='standard' intent='primary'>
+									Open Settings
+								</BAIButton>
+							) : null}
+							<BAIButton mode='outlined' onPress={onCancel} shape='pill' widthPreset='standard' intent='neutral'>
+								Cancel
 							</BAIButton>
-						) : null}
-						<BAIButton mode='outlined' onPress={onCancel} shape='pill' widthPreset='standard' intent='neutral'>
-							Cancel
-						</BAIButton>
-					</View>
-				</BAISurface>
-			</BAIScreen>
+						</View>
+					</BAISurface>
+				</BAIScreen>
+			</>
 		);
 	}
 
 	return (
-		<BAIScreen padded={false} safeTop={false} safeBottom={false} style={styles.root}>
-			<View style={[styles.full, { backgroundColor: theme.colors.background }]}>
-				<View style={styles.preview}>
-					<CameraView
-						style={StyleSheet.absoluteFill}
-						facing='back'
-						barcodeScannerSettings={{
-							barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "code128", "code39", "qr"],
-						}}
-						onBarcodeScanned={lockedUI ? undefined : onScanned}
-					/>
+		<>
+			<Stack.Screen options={{ headerShown: false }} />
+			<BAIScreen padded={false} safeTop={false} safeBottom={false} style={styles.root}>
+				<BAIHeader title='Scan' variant='back' onLeftPress={onCancel} />
+				<View style={[styles.full, { backgroundColor: theme.colors.background }]}> 
+					<View style={styles.preview}>
+						<CameraView
+							style={StyleSheet.absoluteFill}
+							facing='back'
+							barcodeScannerSettings={{
+								barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "code128", "code39", "qr"],
+							}}
+							onBarcodeScanned={lockedUI ? undefined : onScanned}
+						/>
 
-					<View style={styles.overlayContainer} pointerEvents='box-none'>
-						{/* Top bar */}
-						<View style={styles.topBar} pointerEvents='box-none'>
-							<BAISurface style={styles.topBarCard}>
-								<BAIText variant='subtitle'>{lockedUI ? "Captured" : "Scan barcode"}</BAIText>
-								<BAIText variant='caption' muted>
-									{lockedUI ? "Returning to Inventory…" : "Align the barcode within the frame."}
-								</BAIText>
-							</BAISurface>
+						<View style={styles.overlayContainer} pointerEvents='box-none'>
+							<View style={styles.topBar} pointerEvents='box-none'>
+								<BAISurface style={styles.topBarCard}>
+									<BAIText variant='subtitle'>{lockedUI ? "Captured" : "Scan barcode"}</BAIText>
+									<BAIText variant='caption' muted>
+										{lockedUI ? "Returning to Inventory..." : "Align the barcode within the frame."}
+									</BAIText>
+								</BAISurface>
+							</View>
 
-							<BAIButton
-								mode='outlined'
-								onPress={onCancel}
-								disabled={lockedUI}
-								shape='pill'
-								widthPreset='standard'
-								intent='neutral'
-							>
-								Close
-							</BAIButton>
-						</View>
-
-						{/* Centered scan window (no dim overlay) */}
-						<View style={styles.scanStage} pointerEvents='none'>
-							<View style={styles.scanWindow}>
-								<View style={styles.cornerTL} />
-								<View style={styles.cornerTR} />
-								<View style={styles.cornerBL} />
-								<View style={styles.cornerBR} />
+							{/* Centered scan window (no dim overlay) */}
+							<View style={styles.scanStage} pointerEvents='none'>
+								<View style={styles.scanWindow}>
+									<View style={styles.cornerTL} />
+									<View style={styles.cornerTR} />
+									<View style={styles.cornerBL} />
+									<View style={styles.cornerBR} />
+								</View>
 							</View>
 						</View>
 					</View>
 				</View>
-			</View>
-		</BAIScreen>
+			</BAIScreen>
+		</>
 	);
 }
 
@@ -258,10 +259,8 @@ const styles = StyleSheet.create({
 	},
 	// Top bar
 	topBar: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		gap: 12,
+		alignItems: "flex-start",
+		justifyContent: "flex-start",
 	},
 	topBarCard: {
 		paddingHorizontal: 14,

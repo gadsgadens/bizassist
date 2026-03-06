@@ -171,7 +171,7 @@ export function ModifierGroupAttachPickerScreen() {
 	return (
 		<>
 			<Stack.Screen options={{ headerShown: false }} />
-			<BAIScreen tabbed padded={false} safeTop={false} safeBottom style={styles.root}>
+			<BAIScreen tabbed padded={false} safeTop={false} safeBottom={false} style={styles.root}>
 				<BAIHeader
 					title='Select Modifier Sets'
 					variant='back'

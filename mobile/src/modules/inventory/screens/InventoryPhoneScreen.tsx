@@ -650,15 +650,6 @@ export default function InventoryPhoneScreen({ routeScope = "inventory" }: { rou
 								</View>
 							</View>
 
-							<InventorySearchBar
-								value={q}
-								onChangeText={setQ}
-								onSubmit={() => setQ((v) => v.trim())}
-								onPressScan={() => safePush(router, toScopedRoute("/(app)/(tabs)/inventory/scan"))}
-								scanEnabled={canNavigate}
-								disabled={false}
-							/>
-
 							<BAISurface
 								style={styles.filterSurface}
 								padded={false}
@@ -666,6 +657,15 @@ export default function InventoryPhoneScreen({ routeScope = "inventory" }: { rou
 								borderWidth={StyleSheet.hairlineWidth}
 							>
 								<View style={styles.filterPanel}>
+									<InventorySearchBar
+										value={q}
+										onChangeText={setQ}
+										onSubmit={() => setQ((v) => v.trim())}
+										onPressScan={() => safePush(router, toScopedRoute("/(app)/(tabs)/inventory/scan"))}
+										scanEnabled={canNavigate}
+										disabled={false}
+									/>
+
 									{/* 1) Sellable Type */}
 									<View style={styles.tabsRowTight}>
 										<BAIGroupTabs<InventorySellableTabValue>

@@ -13,14 +13,18 @@ import {
 } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useTheme } from "react-native-paper";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { ConfirmActionModal } from "@/components/settings/ConfirmActionModal";
 import { BAIButton } from "@/components/ui/BAIButton";
+import { BAIGovernedScrollableLayout } from "@/components/ui/BAIGovernedScrollableLayout";
 import { BAIGroupTabs, type BAIGroupTab } from "@/components/ui/BAIGroupTabs";
 import { BAIHeader } from "@/components/ui/BAIHeader";
+import {
+	BAINumericBottomSheetKeyboard,
+	type BAINumericBottomSheetKey,
+} from "@/components/ui/BAINumericBottomSheetKeyboard";
 import { BAIScreen } from "@/components/ui/BAIScreen";
 import { BAISurface } from "@/components/ui/BAISurface";
 import { BAIText } from "@/components/ui/BAIText";
@@ -66,7 +70,6 @@ const DELETE_REVEAL_INSET = DELETE_ACTION_WIDTH + DELETE_ACTION_GAP;
 const DELETE_OPEN_DURATION_MS = 300;
 const DELETE_CLOSE_DURATION_MS = 180;
 const REMOVE_BUTTON_WIDTH = 30;
-const REMOVE_BUTTON_LEFT_PADDING = 12;
 const PRICE_INPUT_MAX_MINOR_DIGITS = 11;
 const PRICE_INPUT_ESTIMATED_CHAR_WIDTH = 10;
 const PRICE_INPUT_LEFT_INSET = 0;
@@ -120,6 +123,18 @@ function resolvePriceInputWidth(inputValue: string, placeholder: string, maxLeng
 	const safeMaxLength = Math.max(0, Math.trunc(maxLength));
 	const boundedLength = safeMaxLength > 0 ? Math.min(referenceLength, safeMaxLength) : referenceLength;
 	return PRICE_INPUT_LEFT_INSET + PRICE_INPUT_RIGHT_INSET + boundedLength * PRICE_INPUT_ESTIMATED_CHAR_WIDTH;
+}
+
+function applyMoneyKeypadKey(currentMinor: number, key: BAINumericBottomSheetKey, maxMinorDigits: number): number {
+	const currentDigits = sanitizeDigits(String(parseMinorUnits(currentMinor)));
+
+	if (key === "backspace") {
+		const nextDigits = currentDigits.slice(0, -1);
+		return nextDigits ? digitsToMinorUnits(nextDigits, maxMinorDigits) : 0;
+	}
+
+	if (currentDigits.length >= maxMinorDigits) return parseMinorUnits(currentMinor);
+	return digitsToMinorUnits(`${currentDigits}${key}`, maxMinorDigits);
 }
 
 function makeOptionKey() {
@@ -226,7 +241,7 @@ type ModifierOptionRowProps = {
 	onToggleDeleteReveal: (rowKey: string) => void;
 	onActionOption: (row: ModifierOptionDraft) => void;
 	onChangeOptionName: (rowIndex: number, value: string) => void;
-	onChangePriceMinor: (rowIndex: number, nextMinor: number) => void;
+	onOpenPriceKeyboard: (rowKey: string) => void;
 };
 
 const ModifierOptionRow = memo(function ModifierOptionRow({
@@ -257,73 +272,19 @@ const ModifierOptionRow = memo(function ModifierOptionRow({
 	onToggleDeleteReveal,
 	onActionOption,
 	onChangeOptionName,
-	onChangePriceMinor,
+	onOpenPriceKeyboard,
 }: ModifierOptionRowProps) {
 	const rowMinor = toSafeMinor(row.deltaMinor);
-	const [isPriceFocused, setIsPriceFocused] = useState(false);
-	const [editingMinor, setEditingMinor] = useState(rowMinor);
-	const syncRafIdRef = useRef<number | null>(null);
-	const latestEditingMinorRef = useRef(editingMinor);
-
-	useEffect(() => {
-		latestEditingMinorRef.current = editingMinor;
-	}, [editingMinor]);
-
-	useEffect(() => {
-		if (!isPriceFocused) setEditingMinor(rowMinor);
-	}, [isPriceFocused, rowMinor]);
-
-	useEffect(() => {
-		return () => {
-			if (syncRafIdRef.current != null) {
-				cancelAnimationFrame(syncRafIdRef.current);
-				syncRafIdRef.current = null;
-			}
-		};
-	}, []);
-
-	const displayedMinor = isPriceFocused ? editingMinor : rowMinor;
-	const inputValue = displayedMinor > 0 ? formatPriceDisplay(displayedMinor) : "";
+	const inputValue = rowMinor > 0 ? formatPriceDisplay(rowMinor) : "";
 	const priceInputWidth = useMemo(
 		() => resolvePriceInputWidth(inputValue, pricePlaceholder, maxPriceInputLength),
 		[inputValue, maxPriceInputLength, pricePlaceholder],
 	);
 
 	const onPriceFocus = useCallback(() => {
-		if (syncRafIdRef.current != null) {
-			cancelAnimationFrame(syncRafIdRef.current);
-			syncRafIdRef.current = null;
-		}
-		setEditingMinor(rowMinor);
-		setIsPriceFocused(true);
-	}, [rowMinor]);
-
-	const onPriceBlur = useCallback(() => {
-		if (syncRafIdRef.current != null) {
-			cancelAnimationFrame(syncRafIdRef.current);
-			syncRafIdRef.current = null;
-		}
-		onChangePriceMinor(rowIndex, latestEditingMinorRef.current);
-		setIsPriceFocused(false);
-	}, [onChangePriceMinor, rowIndex]);
-
-	const onPriceChange = useCallback(
-		(value: string) => {
-			const baseMinor = isPriceFocused ? editingMinor : rowMinor;
-			const nextMinor = resolveNextMinorFromInput(baseMinor, value);
-			if (nextMinor === baseMinor) return;
-			setEditingMinor(nextMinor);
-			if (syncRafIdRef.current != null) {
-				cancelAnimationFrame(syncRafIdRef.current);
-				syncRafIdRef.current = null;
-			}
-			syncRafIdRef.current = requestAnimationFrame(() => {
-				syncRafIdRef.current = null;
-				onChangePriceMinor(rowIndex, nextMinor);
-			});
-		},
-		[editingMinor, isPriceFocused, onChangePriceMinor, rowIndex, rowMinor],
-	);
+		if (isReadOnly) return;
+		onOpenPriceKeyboard(row.key);
+	}, [isReadOnly, onOpenPriceKeyboard, row.key]);
 
 	return (
 		<View style={[styles.optionRow, { borderBottomColor }]}>
@@ -400,9 +361,8 @@ const ModifierOptionRow = memo(function ModifierOptionRow({
 							textColor={priceTextColor}
 							maxLength={maxPriceInputLength}
 							editable={!isReadOnly}
-							onChangeText={onPriceChange}
+							showSoftInputOnFocus={false}
 							onFocus={onPriceFocus}
-							onBlur={onPriceBlur}
 							onSubmitEditing={onSubmitPrice}
 						/>
 					</View>
@@ -434,7 +394,6 @@ const ModifierOptionRow = memo(function ModifierOptionRow({
 
 export function ModifierGroupUpsertScreen({ mode, intent }: Props) {
 	const router = useRouter();
-	const tabBarHeight = useBottomTabBarHeight();
 	const theme = useTheme();
 	const { currencyCode, countryCode } = useActiveBusinessMeta();
 	const params = useLocalSearchParams<{ id?: string; returnTo?: string } & ModifierPickerInboundParams>();
@@ -476,6 +435,7 @@ export function ModifierGroupUpsertScreen({ mode, intent }: Props) {
 	const [sharedAvailabilityNextIsSoldOut] = useState<boolean>(false);
 	const [deleteRevealKey, setDeleteRevealKey] = useState<string | null>(null);
 	const [deleteControlVisibleKeys, setDeleteControlVisibleKeys] = useState<Set<string>>(() => new Set());
+	const [activePriceRowKey, setActivePriceRowKey] = useState<string | null>(null);
 	const [modifiersListHeight, setModifiersListHeight] = useState(0);
 	const [optionsTab, setOptionsTab] = useState<ModifierOptionsTab>("active");
 	const [initialSnapshot, setInitialSnapshot] = useState<string | null>(null);
@@ -489,13 +449,6 @@ export function ModifierGroupUpsertScreen({ mode, intent }: Props) {
 
 	const backRoute = mode === "settings" ? "/(app)/(tabs)/settings/modifiers" : "/(app)/(tabs)/inventory/modifiers";
 	const outline = theme.colors.outlineVariant ?? theme.colors.outline;
-	const surfaceInteractive = useMemo(
-		() => ({
-			borderColor: outline,
-			backgroundColor: theme.colors.surface,
-		}),
-		[outline, theme.colors.surface],
-	);
 	const controlSurfaceInteractive = useMemo(
 		() => ({
 			borderColor: outline,
@@ -819,6 +772,11 @@ export function ModifierGroupUpsertScreen({ mode, intent }: Props) {
 	const activeVisibleOptionRows = useMemo(() => activeOptions, [activeOptions]);
 	const activeOptionsEmpty = activeVisibleOptionRows.length === 0;
 	const archivedOptionsEmpty = archivedVisibleOptionRows.length === 0;
+	const isMoneyKeyboardOpen = activePriceRowKey !== null;
+	const moneyKeyboardKey = useMemo(
+		() => `${draftId || "modifier-group"}:${activePriceRowKey ?? "closed"}`,
+		[activePriceRowKey, draftId],
+	);
 	const showActiveDestructiveAction = intent === "edit" && Boolean(groupId);
 	const showArchivedDestructiveAction = intent === "edit" && Boolean(groupId) && archivedOptions.length > 0;
 	const filledOptions = useMemo(() => activeOptions.filter((row) => row.name.trim().length > 0), [activeOptions]);
@@ -964,14 +922,52 @@ export function ModifierGroupUpsertScreen({ mode, intent }: Props) {
 		[deleteRevealKey, resetDeleteRevealAnimationValues, runDeleteActionAnimation],
 	);
 
+	const openOptionPriceKeyboard = useCallback((rowKey: string) => {
+		if (!rowKey) return;
+		setActivePriceRowKey(rowKey);
+	}, []);
+
+	const closeMoneyKeyboard = useCallback(() => {
+		setActivePriceRowKey((prev) => {
+			if (prev) {
+				optionPriceInputRefs.current.get(prev)?.blur?.();
+			}
+			return null;
+		});
+	}, []);
+
 	useEffect(() => {
 		closeDeleteReveal();
-	}, [closeDeleteReveal, optionsTab]);
+		closeMoneyKeyboard();
+	}, [closeDeleteReveal, closeMoneyKeyboard, optionsTab]);
 
 	const dismissKeyboard = useCallback(() => {
 		Keyboard.dismiss();
+		closeMoneyKeyboard();
 		closeDeleteReveal();
-	}, [closeDeleteReveal]);
+	}, [closeDeleteReveal, closeMoneyKeyboard]);
+
+	const onMoneyKeyPress = useCallback(
+		(key: BAINumericBottomSheetKey) => {
+			if (!activePriceRowKey) return;
+
+			setOptions((prev) => {
+				const rowIndex = prev.findIndex((row) => row.key === activePriceRowKey);
+				if (rowIndex < 0) return prev;
+				const row = prev[rowIndex];
+				if (row.removed) return prev;
+
+				const currentMinor = toSafeMinor(row.deltaMinor);
+				const nextMinor = applyMoneyKeypadKey(currentMinor, key, PRICE_INPUT_MAX_MINOR_DIGITS);
+				if (nextMinor === currentMinor) return prev;
+
+				const next = [...prev];
+				next[rowIndex] = { ...row, deltaMinor: nextMinor };
+				return ensureTrailingPlaceholderOption(next);
+			});
+		},
+		[activePriceRowKey],
+	);
 
 	const onChangePriceMinor = useCallback((rowIndex: number, nextMinor: number) => {
 		setOptions((prev) => {
@@ -1376,135 +1372,155 @@ export function ModifierGroupUpsertScreen({ mode, intent }: Props) {
 	return (
 		<>
 			<Stack.Screen options={{ headerShown: false }} />
-			<BAIScreen tabbed padded={false} safeTop={false} safeBottom={false} style={styles.root}>
+			<BAIScreen
+				tabbed
+				padded={false}
+				safeTop={false}
+				safeBottom={false}
+				safeAreaGradientBottom
+				style={styles.root}
+			>
 				<BAIHeader title={headerTitle} titleHorizontalPadding={30} variant='exit' onLeftPress={guardedExit} />
 				<TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
-					<View style={[styles.wrap, { paddingBottom: tabBarHeight + 8 }]}>
+					<View style={styles.wrap}>
 						<View style={styles.contentWrap}>
-							<BAISurface bordered padded={false} style={[styles.card, surfaceInteractive]}>
-								<View style={styles.content}>
-									<View style={styles.modifierSetConfigContainer}>
-										<View style={styles.topActionRow}>
-											<BAIButton
-												variant='outline'
-												intent='neutral'
-												shape='pill'
-												onPress={guardedExit}
-												disabled={!!busy?.isBusy}
-												style={styles.topActionButton}
+							<BAIGovernedScrollableLayout
+									top={
+										<View style={styles.topSection}>
+											<View
+												style={[
+													styles.modifierSetConfigContainer,
+													{
+														borderColor: outline,
+													},
+												]}
 											>
-												Cancel
-											</BAIButton>
-											<BAIButton
-												variant='solid'
-												intent='primary'
-												shape='pill'
-												onPress={onSave}
-												disabled={isSaveDisabled}
-												style={styles.topActionButton}
-											>
-												Save
-											</BAIButton>
-										</View>
-										<View>
-											<BAITextInput
-												label='Modifier Set Name'
-												value={name}
-												onChangeText={(value) => setName(clampFieldValue(value, MODIFIER_SET_NAME_CHAR_LIMIT))}
-												maxLength={MODIFIER_SET_NAME_CHAR_LIMIT}
-												textColor={theme.colors.onSurface}
-											/>
-										</View>
-										<Pressable
-											onPress={onPressApplySet}
-											style={({ pressed }) => [
-												styles.applySetRow,
-												controlSurfaceInteractive,
-												pressed ? { opacity: 0.86 } : null,
-											]}
-										>
-											<BAIText variant='subtitle'>Apply Set</BAIText>
-											<View style={styles.applySetRight}>
-												<BAIText variant='subtitle'>{applySetCountLabel}</BAIText>
-												<MaterialCommunityIcons
-													name='chevron-right'
-													size={24}
-													color={theme.colors.onSurfaceVariant ?? theme.colors.onSurface}
-												/>
-											</View>
-										</Pressable>
-										<View style={[styles.advancedRulesContainer, controlSurfaceInteractive]}>
-											<Pressable
-												onPress={onToggleSelectionRules}
-												style={({ pressed }) => [styles.advancedRulesRow, pressed ? { opacity: 0.86 } : null]}
-											>
-												<View style={styles.advancedRulesLabelWrap}>
-													<BAIText variant='body'>Advanced rules</BAIText>
-													<BAIText variant='caption' muted>
-														{rulesSummary}
-													</BAIText>
+												<View style={styles.topActionRow}>
+													<BAIButton
+														variant='outline'
+														intent='neutral'
+														shape='pill'
+														onPress={guardedExit}
+														disabled={!!busy?.isBusy}
+														style={styles.topActionButton}
+													>
+														Cancel
+													</BAIButton>
+													<BAIButton
+														variant='solid'
+														intent='primary'
+														shape='pill'
+														onPress={onSave}
+														disabled={isSaveDisabled}
+														style={styles.topActionButton}
+													>
+														Save
+													</BAIButton>
 												</View>
-												<MaterialCommunityIcons
-													name={showSelectionRules ? "chevron-up" : "chevron-down"}
-													size={24}
-													color={theme.colors.onSurfaceVariant ?? theme.colors.onSurface}
-												/>
-											</Pressable>
-											{showSelectionRules ? (
 												<View>
-													<View style={styles.rulesRow}>
-														<BAITextInput
-															label='Minimum Selections'
-															value={minSelected}
-															onChangeText={(value) =>
-																setMinSelected(clampSelectionRuleInput(value, 0, MODIFIER_SELECTION_RULE_CAP))
-															}
-															keyboardType='number-pad'
-															maxLength={String(MODIFIER_SELECTION_RULE_CAP).length}
-															style={styles.ruleInput}
-														/>
-														<BAITextInput
-															label='Maximum Selections'
-															value={maxSelected}
-															onChangeText={(value) =>
-																setMaxSelected(clampSelectionRuleInput(value, 1, MODIFIER_SELECTION_RULE_CAP))
-															}
-															keyboardType='number-pad'
-															maxLength={String(MODIFIER_SELECTION_RULE_CAP).length}
-															style={styles.ruleInput}
+													<BAITextInput
+														label='Modifier Set Name'
+														value={name}
+														onChangeText={(value) => setName(clampFieldValue(value, MODIFIER_SET_NAME_CHAR_LIMIT))}
+														maxLength={MODIFIER_SET_NAME_CHAR_LIMIT}
+														textColor={theme.colors.onSurface}
+													/>
+												</View>
+												<Pressable
+													onPress={onPressApplySet}
+													style={({ pressed }) => [
+														styles.applySetRow,
+														controlSurfaceInteractive,
+														pressed ? { opacity: 0.86 } : null,
+													]}
+												>
+													<BAIText variant='subtitle'>Apply Set</BAIText>
+													<View style={styles.applySetRight}>
+														<BAIText variant='subtitle'>{applySetCountLabel}</BAIText>
+														<MaterialCommunityIcons
+															name='chevron-right'
+															size={24}
+															color={theme.colors.onSurfaceVariant ?? theme.colors.onSurface}
 														/>
 													</View>
+												</Pressable>
+												<View style={[styles.advancedRulesContainer, controlSurfaceInteractive]}>
+													<Pressable
+														onPress={onToggleSelectionRules}
+														style={({ pressed }) => [styles.advancedRulesRow, pressed ? { opacity: 0.86 } : null]}
+													>
+														<View style={styles.advancedRulesLabelWrap}>
+															<BAIText variant='body'>Advanced rules</BAIText>
+															<BAIText variant='caption' muted>
+																{rulesSummary}
+															</BAIText>
+														</View>
+														<MaterialCommunityIcons
+															name={showSelectionRules ? "chevron-up" : "chevron-down"}
+															size={24}
+															color={theme.colors.onSurfaceVariant ?? theme.colors.onSurface}
+														/>
+													</Pressable>
+													{showSelectionRules ? (
+														<View>
+															<View style={styles.rulesRow}>
+																<BAITextInput
+																	label='Minimum Selections'
+																	value={minSelected}
+																	onChangeText={(value) =>
+																		setMinSelected(clampSelectionRuleInput(value, 0, MODIFIER_SELECTION_RULE_CAP))
+																	}
+																	keyboardType='number-pad'
+																	maxLength={String(MODIFIER_SELECTION_RULE_CAP).length}
+																	style={styles.ruleInput}
+																/>
+																<BAITextInput
+																	label='Maximum Selections'
+																	value={maxSelected}
+																	onChangeText={(value) =>
+																		setMaxSelected(clampSelectionRuleInput(value, 1, MODIFIER_SELECTION_RULE_CAP))
+																	}
+																	keyboardType='number-pad'
+																	maxLength={String(MODIFIER_SELECTION_RULE_CAP).length}
+																	style={styles.ruleInput}
+																/>
+															</View>
+														</View>
+													) : null}
 												</View>
-											) : null}
-										</View>
-									</View>
-									<View style={styles.modifiersSection}>
-										<BAIText variant='subtitle' style={styles.modifiersTitle}>
-											Modifiers
-										</BAIText>
-										{intent === "edit" ? (
-											<View style={styles.optionTabsWrap}>
-												<BAIGroupTabs<ModifierOptionsTab>
-													tabs={optionTabs}
-													value={optionsTab}
-													onChange={setOptionsTab}
-													countFormatter={(count) => formatCompactNumber(count, countryCode)}
-												/>
 											</View>
-										) : null}
-										{optionsTab === "archived" ? (
+											<View style={styles.modifiersHeader}>
+												<BAIText variant='subtitle' style={styles.modifiersTitle}>
+													Modifiers
+												</BAIText>
+												{intent === "edit" ? (
+													<View style={styles.optionTabsWrap}>
+														<BAIGroupTabs<ModifierOptionsTab>
+															tabs={optionTabs}
+															value={optionsTab}
+															onChange={setOptionsTab}
+															countFormatter={(count) => formatCompactNumber(count, countryCode)}
+														/>
+													</View>
+												) : null}
+												{error ? (
+													<BAIText variant='caption' style={[styles.errorText, { color: theme.colors.error }]}>
+														{error}
+													</BAIText>
+												) : null}
+											</View>
+										</View>
+									}
+									scrollArea={
+										optionsTab === "archived" ? (
 											<ScrollView
 												style={styles.modifiersList}
 												contentContainerStyle={[
 													styles.modifiersListContent,
-													{
-														borderTopWidth: 1,
-														borderTopColor: theme.colors.outline,
-													},
+													{ borderTopWidth: 1, borderTopColor: theme.colors.outline },
 													{ paddingBottom: Math.max(0, modifiersListHeight * 0.75) },
 												]}
 												onLayout={(event) => setModifiersListHeight(event.nativeEvent.layout.height)}
-												nestedScrollEnabled
 												showsVerticalScrollIndicator={false}
 												keyboardShouldPersistTaps='handled'
 												keyboardDismissMode='on-drag'
@@ -1524,10 +1540,7 @@ export function ModifierGroupUpsertScreen({ mode, intent }: Props) {
 															pressed ? { opacity: 0.92 } : null,
 														]}
 													>
-														<BAIText
-															variant='subtitle'
-															style={[styles.archiveButtonText, { color: archiveButtonTextColor }]}
-														>
+														<BAIText variant='subtitle' style={[styles.archiveButtonText, { color: archiveButtonTextColor }]}>
 															{destructiveActionLabel}
 														</BAIText>
 													</Pressable>
@@ -1538,14 +1551,10 @@ export function ModifierGroupUpsertScreen({ mode, intent }: Props) {
 												style={styles.modifiersList}
 												contentContainerStyle={[
 													styles.modifiersListContent,
-													{
-														borderTopWidth: 1,
-														borderTopColor: theme.colors.outline,
-													},
+													{ borderTopWidth: 1, borderTopColor: theme.colors.outline },
 													{ paddingBottom: Math.max(0, modifiersListHeight * 0.75) },
 												]}
 												onLayout={(event) => setModifiersListHeight(event.nativeEvent.layout.height)}
-												nestedScrollEnabled
 												showsVerticalScrollIndicator={false}
 												keyboardShouldPersistTaps='handled'
 												keyboardDismissMode='on-drag'
@@ -1565,24 +1574,15 @@ export function ModifierGroupUpsertScreen({ mode, intent }: Props) {
 															pressed ? { opacity: 0.92 } : null,
 														]}
 													>
-														<BAIText
-															variant='subtitle'
-															style={[styles.archiveButtonText, { color: archiveButtonTextColor }]}
-														>
+														<BAIText variant='subtitle' style={[styles.archiveButtonText, { color: archiveButtonTextColor }]}>
 															{destructiveActionLabel}
 														</BAIText>
 													</Pressable>
 												) : null}
 											</ScrollView>
-										)}
-									</View>
-									{error ? (
-										<BAIText variant='caption' style={{ color: theme.colors.error }}>
-											{error}
-										</BAIText>
-									) : null}
-								</View>
-							</BAISurface>
+										)
+									}
+								/>
 						</View>
 					</View>
 				</TouchableWithoutFeedback>
@@ -1681,13 +1681,23 @@ export function ModifierGroupUpsertScreen({ mode, intent }: Props) {
 
 const styles = StyleSheet.create({
 	root: { flex: 1 },
-	wrap: { flex: 1, paddingHorizontal: 8 },
+	wrap: { flex: 1, paddingHorizontal: 12 },
 	contentWrap: { flex: 1, width: "100%", maxWidth: 720, alignSelf: "center" },
-	card: { flex: 1, borderRadius: 18, paddingTop: 8, paddingHorizontal: 0 },
-	content: { flex: 1, gap: 8, paddingBottom: 8 },
+	topSection: { gap: 8, paddingBottom: 8 },
 	modifierSetConfigContainer: {
-		marginHorizontal: 10,
+		marginHorizontal: 0,
+		borderWidth: StyleSheet.hairlineWidth,
+		borderRadius: 14,
+		paddingHorizontal: 10,
+		paddingTop: 10,
+		paddingBottom: 8,
 		gap: 8,
+	},
+	modifiersHeader: {
+		gap: 8,
+	},
+	errorText: {
+		marginHorizontal: 10,
 	},
 	topActionRow: {
 		flexDirection: "row",
@@ -1739,13 +1749,9 @@ const styles = StyleSheet.create({
 		paddingBottom: 0,
 		marginBottom: 6,
 	},
-	modifiersSection: {
-		flex: 1,
-		minHeight: 0,
-		gap: 8,
-	},
 	modifiersTitle: {
 		marginHorizontal: 10,
+		paddingLeft: 4,
 	},
 	optionTabsWrap: {
 		marginHorizontal: 10,
@@ -1796,7 +1802,7 @@ const styles = StyleSheet.create({
 		width: REMOVE_BUTTON_WIDTH,
 		height: 56,
 		marginLeft: 0,
-		paddingLeft: REMOVE_BUTTON_LEFT_PADDING,
+		marginRight: 1,
 	},
 	removeBtn: {
 		alignItems: "center",

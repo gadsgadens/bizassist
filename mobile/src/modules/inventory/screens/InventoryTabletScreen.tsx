@@ -267,14 +267,13 @@ function DetailMetaRow({
 	return (
 		<View
 			style={[
-				styles.metaRow,
 				!isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: borderColor },
 			]}
 		>
 			<BAIText variant='caption' muted style={styles.metaLabel}>
 				{label}
 			</BAIText>
-			<View style={styles.metaValueRow}>{children}</View>
+			{children}
 		</View>
 	);
 }
@@ -283,7 +282,7 @@ export default function InventoryTabletScreen({ routeScope = "inventory" }: { ro
 	const router = useRouter();
 	const theme = useTheme();
 	const borderColor = theme.colors.outlineVariant ?? theme.colors.outline;
-	const surfaceAlt = theme.colors.surfaceVariant ?? theme.colors.surface;
+	const surfaceAlt = (theme.colors.surfaceVariant ?? theme.colors.surface) as string;
 	const { currencyCode, countryCode } = useActiveBusinessMeta();
 	const toScopedRoute = useCallback((route: string) => mapInventoryRouteToScope(route, routeScope), [routeScope]);
 
@@ -390,9 +389,8 @@ export default function InventoryTabletScreen({ routeScope = "inventory" }: { ro
 			{ label: "In", value: "healthy", count: inStockCount },
 			{ label: "Low", value: "low", count: healthCounts.low },
 			{ label: "Out", value: "out", count: healthCounts.out },
-			{ label: "No RP", value: "reorder", count: healthCounts.missingReorder },
 		],
-		[activeItemItems.length, healthCounts.low, healthCounts.missingReorder, healthCounts.out, inStockCount],
+		[activeItemItems.length, healthCounts.low, healthCounts.out, inStockCount],
 	);
 
 	const filteredItems = useMemo(() => {
@@ -682,24 +680,26 @@ export default function InventoryTabletScreen({ routeScope = "inventory" }: { ro
 								borderWidth={StyleSheet.hairlineWidth}
 							>
 								<View style={styles.filterPanel}>
-									<View style={styles.tabsRowTight}>
-										<BAIGroupTabs<InventorySellableTabValue>
-											tabs={sellableTabs}
-											value={sellableTabValue}
-											onChange={onSetSellable}
-											disabled={!canNavigate}
-											countFormatter={(count) => formatCompactCount(count, countryCode)}
-										/>
-									</View>
+									<View style={styles.tabsInlineRow}>
+										<View style={styles.tabsInlineItem}>
+											<BAIGroupTabs<InventorySellableTabValue>
+												tabs={sellableTabs}
+												value={sellableTabValue}
+												onChange={onSetSellable}
+												disabled={!canNavigate}
+												countFormatter={(count) => formatCompactCount(count, countryCode)}
+											/>
+										</View>
 
-									<View style={styles.tabsRowTight}>
-										<BAIGroupTabs<InventoryStatusTabValue>
-											tabs={statusTabs}
-											value={statusTabValue}
-											onChange={onSetStatus}
-											disabled={!canNavigate}
-											countFormatter={(count) => formatCompactCount(count, countryCode)}
-										/>
+										<View style={styles.tabsInlineItem}>
+											<BAIGroupTabs<InventoryStatusTabValue>
+												tabs={statusTabs}
+												value={statusTabValue}
+												onChange={onSetStatus}
+												disabled={!canNavigate}
+												countFormatter={(count) => formatCompactCount(count, countryCode)}
+											/>
+										</View>
 									</View>
 
 									{showHealthTabs ? (
@@ -864,6 +864,8 @@ export default function InventoryTabletScreen({ routeScope = "inventory" }: { ro
 
 												<View style={styles.actions}>
 													<BAIButton
+														intent='neutral'
+														variant='outline'
 														onPress={() =>
 															safePush(
 																router,
@@ -873,14 +875,15 @@ export default function InventoryTabletScreen({ routeScope = "inventory" }: { ro
 															)
 														}
 														disabled={!canNavigate || detailIsArchived}
-														style={styles.adjustBtn}
+														style={styles.actionBtn}
 														widthPreset='standard'
 													>
 														Adjust
 													</BAIButton>
 
 													<BAIButton
-														mode='outlined'
+														intent='primary'
+														variant='solid'
 														onPress={() =>
 															safePush(
 																router,
@@ -889,7 +892,7 @@ export default function InventoryTabletScreen({ routeScope = "inventory" }: { ro
 														}
 														disabled={!canNavigate}
 														widthPreset='standard'
-														style={styles.adjustBtn}
+														style={styles.actionBtn}
 													>
 														Open
 													</BAIButton>
@@ -994,6 +997,15 @@ const styles = StyleSheet.create({
 	list: { flex: 1, minHeight: 0 },
 	filterSurface: { marginBottom: 0 },
 	filterPanel: { paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
+	tabsInlineRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+	},
+	tabsInlineItem: {
+		flex: 1,
+		minWidth: 0,
+	},
 	tabsRowTight: { marginTop: 2 },
 	listContent: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12 },
 	listContentEmpty: { flexGrow: 1 },
@@ -1070,7 +1082,7 @@ const styles = StyleSheet.create({
 	inactiveBadgeText: {
 		fontSize: 11,
 	},
-	actions: { marginTop: 12, flexDirection: "row", gap: 10 },
+	actions: { marginTop: 12, flexDirection: "row", gap: 10, justifyContent: "flex-end" },
 
 	sectionHeader: {
 		marginTop: 14,
@@ -1093,5 +1105,5 @@ const styles = StyleSheet.create({
 		paddingVertical: 6,
 	},
 	sectionBody: { paddingTop: 12 },
-	adjustBtn: { minWidth: 150 },
+	actionBtn: { minWidth: 180 },
 });

@@ -7,10 +7,11 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { BAIHeader } from "@/components/ui/BAIHeader";
 import { BAIButton } from "@/components/ui/BAIButton";
+import { BAIGovernedScrollableLayout } from "@/components/ui/BAIGovernedScrollableLayout";
 import { BAIGroupTabs, type BAIGroupTab } from "@/components/ui/BAIGroupTabs";
 import { BAIRetryButton } from "@/components/ui/BAIRetryButton";
 import { BAIScreen } from "@/components/ui/BAIScreen";
-import { BAISearchBar } from "@/components/ui/BAISearchBar";
+import { BAISearchWithScanButton } from "@/components/ui/BAISearchWithScanButton";
 import { BAISurface } from "@/components/ui/BAISurface";
 import { BAIText } from "@/components/ui/BAIText";
 import { useResponsiveLayout } from "@/lib/layout/useResponsiveLayout";
@@ -24,6 +25,8 @@ import { sanitizeSearchInput } from "@/shared/validation/sanitize";
 const modifierGroupsKey = ["modifiers", "groups", "inventory"] as const;
 const INVENTORY_MODIFIERS_ROUTE = "/(app)/(tabs)/inventory/modifiers" as const;
 const INVENTORY_ROOT_ROUTE = "/(app)/(tabs)/inventory" as const;
+const INVENTORY_SCAN_ROUTE = "/(app)/(tabs)/inventory/scan" as const;
+const SCANNED_BARCODE_KEY = "scannedBarcode" as const;
 
 type ModifierFilter = "active" | "archived";
 
@@ -139,7 +142,7 @@ export function ModifiersLedgerScreen() {
 	const router = useRouter();
 	const theme = useTheme();
 	const { isTablet } = useResponsiveLayout();
-	const params = useLocalSearchParams<{ filter?: string }>();
+	const params = useLocalSearchParams<{ filter?: string; scannedBarcode?: string }>();
 	const { countryCode } = useActiveBusinessMeta();
 	const [search, setSearch] = useState("");
 	const [filter, setFilter] = useState<ModifierFilter>(() => resolveModifierFilter(params.filter));
@@ -147,6 +150,14 @@ export function ModifiersLedgerScreen() {
 	useEffect(() => {
 		setFilter(resolveModifierFilter(params.filter));
 	}, [params.filter]);
+
+	useEffect(() => {
+		const scanned = typeof params.scannedBarcode === "string" ? params.scannedBarcode.trim() : "";
+		if (!scanned) return;
+		const cleaned = sanitizeSearchInput(scanned);
+		setSearch(cleaned.length > FIELD_LIMITS.search ? cleaned.slice(0, FIELD_LIMITS.search) : cleaned);
+		router.setParams({ [SCANNED_BARCODE_KEY]: undefined } as any);
+	}, [params.scannedBarcode, router]);
 
 	const groupsQuery = useQuery({
 		queryKey: modifierGroupsKey,
@@ -194,13 +205,20 @@ export function ModifiersLedgerScreen() {
 		router.push(`${INVENTORY_MODIFIERS_ROUTE}/create` as any);
 	}, [router]);
 
+	const onOpenScanner = useCallback(() => {
+		const returnTo = `${INVENTORY_MODIFIERS_ROUTE}?filter=${filter}`;
+		router.push({
+			pathname: INVENTORY_SCAN_ROUTE as any,
+			params: { returnTo },
+		} as any);
+	}, [filter, router]);
+
 	const hasSearch = search.trim().length > 0;
-	const borderColor = theme.colors.outlineVariant ?? theme.colors.outline;
 
 	return (
 		<>
 			<Stack.Screen options={{ headerShown: false }} />
-			<BAIScreen tabbed padded={false} safeTop={false} safeBottom style={styles.root}>
+			<BAIScreen tabbed padded={false} safeTop={false} safeBottom={false} safeAreaGradientBottom style={styles.root}>
 				<BAIHeader
 					title='Modifiers'
 					variant='back'
@@ -215,79 +233,99 @@ export function ModifiersLedgerScreen() {
 				<TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
 					<View style={styles.wrap}>
 						<View style={[styles.content, isTablet ? styles.tablet : null]}>
-							<BAISurface style={[styles.card, { borderColor }]} padded bordered>
-								<View style={styles.controls}>
-									<BAISearchBar
-										value={search}
-										onChangeText={(value) => {
-											const cleaned = sanitizeSearchInput(value);
-											setSearch(cleaned.length > FIELD_LIMITS.search ? cleaned.slice(0, FIELD_LIMITS.search) : cleaned);
-										}}
-										placeholder='Search modifiers...'
-										maxLength={FIELD_LIMITS.search}
-										onClear={hasSearch ? () => setSearch("") : undefined}
-									/>
-									<View style={styles.groupTabsWrap}>
-										<BAIGroupTabs
-											tabs={modifierTabs}
-											value={filter}
-											onChange={setFilter}
-											countFormatter={(count) => formatCompactNumber(count, countryCode)}
-										/>
-									</View>
-								</View>
-
-								<View style={styles.listSection}>
-									{groupsQuery.isLoading ? (
-										<View style={styles.stateWrap}>
-											<BAIText variant='body'>Loading modifier sets...</BAIText>
+							<BAISurface style={styles.card} padded={false} bordered={false}>
+								<BAIGovernedScrollableLayout
+									top={
+										<View
+											style={[
+												styles.controlsContainer,
+												{
+													borderColor: theme.colors.outlineVariant ?? theme.colors.outline,
+												},
+											]}
+										>
+											<View style={styles.controls}>
+												<BAISearchWithScanButton
+													value={search}
+													onChangeText={(value) => {
+														const cleaned = sanitizeSearchInput(value);
+														setSearch(
+															cleaned.length > FIELD_LIMITS.search ? cleaned.slice(0, FIELD_LIMITS.search) : cleaned,
+														);
+													}}
+													onPressScan={onOpenScanner}
+													placeholder='Search modifiers...'
+													maxLength={FIELD_LIMITS.search}
+													onSubmit={() => setSearch((value) => value.trim())}
+													scanEnabled
+													searchAccessibilityLabel='Search modifiers'
+													style={styles.searchControl}
+												/>
+												<View style={styles.groupTabsWrap}>
+													<BAIGroupTabs
+														tabs={modifierTabs}
+														value={filter}
+														onChange={setFilter}
+														countFormatter={(count) => formatCompactNumber(count, countryCode)}
+													/>
+												</View>
+											</View>
 										</View>
-									) : groupsQuery.isError ? (
-										<View style={styles.stateWrap}>
-											<BAIRetryButton compact onPress={() => groupsQuery.refetch()}>
-												Retry
-											</BAIRetryButton>
+									}
+									scrollArea={
+										<View style={styles.listSection}>
+											{groupsQuery.isLoading ? (
+												<View style={styles.stateWrap}>
+													<BAIText variant='body'>Loading modifier sets...</BAIText>
+												</View>
+											) : groupsQuery.isError ? (
+												<View style={styles.stateWrap}>
+													<BAIRetryButton compact onPress={() => groupsQuery.refetch()}>
+														Retry
+													</BAIRetryButton>
+												</View>
+											) : items.length === 0 ? (
+												<BAISurface bordered style={styles.emptyWrap}>
+													<BAIText variant='body'>
+														{hasSearch
+															? `No matching ${filter === "active" ? "active" : "archived"} modifier sets.`
+															: filter === "active"
+																? "No active modifier sets."
+																: "No archived modifier sets."}
+													</BAIText>
+													<BAIText variant='caption' muted>
+														{hasSearch
+															? "Try a different search term."
+															: filter === "active"
+																? "Create your first modifier set."
+																: "Archived modifier sets will appear here."}
+													</BAIText>
+													{!hasSearch && filter === "active" ? (
+														<BAIButton
+															variant='solid'
+															intent='primary'
+															shape='pill'
+															onPress={onCreate}
+															style={styles.emptyAction}
+														>
+															Create Modifier Set
+														</BAIButton>
+													) : null}
+												</BAISurface>
+											) : (
+												<FlatList
+													data={items}
+													keyExtractor={(item) => item.id}
+													renderItem={({ item }) => <Row item={item} onOpen={onOpen} countryCode={countryCode} />}
+													style={styles.list}
+													contentContainerStyle={styles.listContent}
+													keyboardShouldPersistTaps='handled'
+													showsVerticalScrollIndicator={false}
+												/>
+											)}
 										</View>
-									) : items.length === 0 ? (
-										<BAISurface bordered style={styles.emptyWrap}>
-											<BAIText variant='body'>
-												{hasSearch
-													? `No matching ${filter === "active" ? "active" : "archived"} modifier sets.`
-													: filter === "active"
-														? "No active modifier sets."
-														: "No archived modifier sets."}
-											</BAIText>
-											<BAIText variant='caption' muted>
-												{hasSearch
-													? "Try a different search term."
-													: filter === "active"
-														? "Create your first modifier set."
-														: "Archived modifier sets will appear here."}
-											</BAIText>
-											{!hasSearch && filter === "active" ? (
-												<BAIButton
-													variant='solid'
-													intent='primary'
-													shape='pill'
-													onPress={onCreate}
-													style={styles.emptyAction}
-												>
-													Create Modifier Set
-												</BAIButton>
-											) : null}
-										</BAISurface>
-									) : (
-										<FlatList
-											data={items}
-											keyExtractor={(item) => item.id}
-											renderItem={({ item }) => <Row item={item} onOpen={onOpen} countryCode={countryCode} />}
-											style={styles.list}
-											contentContainerStyle={styles.listContent}
-											keyboardShouldPersistTaps='handled'
-											showsVerticalScrollIndicator={false}
-										/>
-									)}
-								</View>
+									}
+								/>
 							</BAISurface>
 						</View>
 					</View>
@@ -299,11 +337,20 @@ export function ModifiersLedgerScreen() {
 
 const styles = StyleSheet.create({
 	root: { flex: 1 },
-	wrap: { flex: 1, minHeight: 0, paddingHorizontal: 8, paddingTop: 0 },
+	wrap: { flex: 1, minHeight: 0, paddingHorizontal: 12, paddingTop: 0 },
 	content: { flex: 1, minHeight: 0, width: "100%", alignSelf: "center" },
 	tablet: { maxWidth: 720 },
 	card: { flex: 1, minHeight: 0, borderRadius: 18, gap: 6 },
+	controlsContainer: {
+		borderWidth: 1,
+		borderRadius: 14,
+		paddingHorizontal: 8,
+		paddingTop: 8,
+		paddingBottom: 6,
+		marginBottom: 10,
+	},
 	controls: { gap: 4, paddingBottom: 2 },
+	searchControl: { paddingTop: 8 },
 	groupTabsWrap: {
 		paddingTop: 6,
 	},

@@ -52,6 +52,7 @@ const PILL_HEIGHT = 64;
 const PILL_RADIUS = 999;
 
 const INSET = 6; // matches visual intent of GroupTabs container padding model
+const OUTER_HORIZONTAL_MARGIN = 10;
 
 /**
  * STRICT canonicalization.
@@ -152,7 +153,8 @@ export function BAIBottomTabBar(props: BottomTabBarProps) {
 	const bottom = Math.max(insets.bottom, 12);
 
 	const pillBg = theme.colors.surface;
-	const borderColor = theme.colors.outlineVariant ?? theme.colors.outline;
+	const containerBorderColor = theme.colors.outline;
+	const activeBorderColor = theme.colors.outlineVariant ?? theme.colors.outline;
 
 	const activeBase =
 		theme.colors.surfaceVariant ??
@@ -167,11 +169,14 @@ export function BAIBottomTabBar(props: BottomTabBarProps) {
 	const labelIdle = theme.colors.onSurfaceVariant;
 	const labelActive = theme.colors.onSurface;
 
-	const wrapperStyle = useMemo(() => [styles.wrapper, { left: 14, right: 14, bottom }], [bottom]);
+	const wrapperStyle = useMemo(
+		() => [styles.wrapper, { left: OUTER_HORIZONTAL_MARGIN, right: OUTER_HORIZONTAL_MARGIN, bottom }],
+		[bottom],
+	);
 
 	const pillStyle = useMemo(
-		() => [styles.pill, { maxWidth, backgroundColor: pillBg, borderColor }],
-		[maxWidth, pillBg, borderColor],
+		() => [styles.pill, { maxWidth, backgroundColor: pillBg, borderColor: containerBorderColor }],
+		[maxWidth, pillBg, containerBorderColor],
 	);
 
 	/**
@@ -309,7 +314,7 @@ export function BAIBottomTabBar(props: BottomTabBarProps) {
 										styles.bubble,
 										{
 											backgroundColor: isFocused ? activeBubbleBg : "transparent",
-											borderColor: isFocused ? borderColor : "transparent",
+											borderColor: isFocused ? activeBorderColor : "transparent",
 										},
 									]}
 								>
@@ -346,7 +351,7 @@ const styles = StyleSheet.create({
 		width: "100%",
 		height: PILL_HEIGHT,
 		borderRadius: PILL_RADIUS,
-		borderWidth: StyleSheet.hairlineWidth,
+		borderWidth: 1,
 
 		// Equal inset on all sides (top/bottom == left/right).
 		padding: INSET,

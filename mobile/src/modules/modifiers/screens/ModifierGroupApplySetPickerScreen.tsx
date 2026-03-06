@@ -6,18 +6,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
 import { BAIButton } from "@/components/ui/BAIButton";
+import { BAIHeader } from "@/components/ui/BAIHeader";
 import { BAINeutralCheckbox } from "@/components/ui/BAINeutralCheckbox";
 import { BAIScreen } from "@/components/ui/BAIScreen";
-import { BAISurface } from "@/components/ui/BAISurface";
 import { BAIText } from "@/components/ui/BAIText";
 import { BAIActivityIndicator } from "@/components/system/BAIActivityIndicator";
 import { inventoryApi } from "@/modules/inventory/inventory.api";
 import { inventoryKeys } from "@/modules/inventory/inventory.queries";
 import { formatOnHandValue } from "@/modules/inventory/inventory.selectors";
-import { useInventoryHeader } from "@/modules/inventory/useInventoryHeader";
 import type { InventoryProduct } from "@/modules/inventory/inventory.types";
 import { getModifierGroupDraft, upsertModifierGroupDraft } from "@/modules/modifiers/drafts/modifierGroupDraft";
-import { useAppHeader } from "@/modules/navigation/useAppHeader";
 import { unitDisplayToken } from "@/modules/units/units.format";
 import { unitsApi } from "@/modules/units/units.api";
 import { unitKeys } from "@/modules/units/units.queries";
@@ -208,6 +206,7 @@ async function listAllProductsAndServices() {
 
 export function ModifierGroupApplySetPickerScreen({ mode }: Props) {
 	const router = useRouter();
+	const theme = useTheme();
 	const tabBarHeight = useBottomTabBarHeight();
 	const params = useLocalSearchParams<{ draftId?: string; returnTo?: string }>();
 	const draftId = String(params.draftId ?? "").trim();
@@ -227,8 +226,7 @@ export function ModifierGroupApplySetPickerScreen({ mode }: Props) {
 		router.replace({ pathname: backRoute as any, params: { draftId } as any });
 	}, [backRoute, draftId, router]);
 
-	const appHeaderOptions = useAppHeader("detail", { title: "Apply Set", onBack });
-	const inventoryHeaderOptions = useInventoryHeader("detail", { title: "Apply Set", onBack });
+	const borderColor = theme.colors.outlineVariant ?? theme.colors.outline;
 
 	const productsQuery = useQuery({
 		queryKey: [...inventoryKeys.productsRoot(), "apply-set", "all-active"],
@@ -274,49 +272,66 @@ export function ModifierGroupApplySetPickerScreen({ mode }: Props) {
 	const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 	const allRowIds = useMemo(() => rows.map((item) => item.id), [rows]);
 
-	const persistSelectedIds = useCallback(
-		(next: string[]) => {
-			setSelectedIds(next);
-			if (!draftId) return;
-			const draft = getModifierGroupDraft(draftId);
-			if (draft) {
-				upsertModifierGroupDraft(draftId, { appliedProductIds: next });
-			}
-		},
-		[draftId],
-	);
-
 	const onToggle = useCallback(
 		(id: string) => {
 			setSelectedIds((prev) => {
 				const exists = prev.includes(id);
-				const next = exists ? prev.filter((value) => value !== id) : [...prev, id];
-				if (!draftId) return next;
-				const draft = getModifierGroupDraft(draftId);
-				if (draft) {
-					upsertModifierGroupDraft(draftId, { appliedProductIds: next });
-				}
-				return next;
+				return exists ? prev.filter((value) => value !== id) : [...prev, id];
 			});
 		},
-		[draftId],
+		[],
 	);
 
 	const onClearAll = useCallback(() => {
-		persistSelectedIds([]);
-	}, [persistSelectedIds]);
+		setSelectedIds([]);
+	}, []);
 
 	const onApplyAll = useCallback(() => {
-		persistSelectedIds(allRowIds);
-	}, [allRowIds, persistSelectedIds]);
+		setSelectedIds(allRowIds);
+	}, [allRowIds]);
+
+	const onApplySelection = useCallback(() => {
+		if (draftId) {
+			const draft = getModifierGroupDraft(draftId);
+			if (draft) {
+				upsertModifierGroupDraft(draftId, { appliedProductIds: selectedIds });
+			}
+		}
+		router.replace({ pathname: backRoute as any, params: { draftId } as any });
+	}, [backRoute, draftId, router, selectedIds]);
 
 	return (
 		<>
-			<Stack.Screen options={mode === "settings" ? appHeaderOptions : inventoryHeaderOptions} />
+			<Stack.Screen
+				options={{
+					headerShown: true,
+					header: () => (
+						<BAIHeader
+							title='Apply Set'
+							variant='back'
+							onLeftPress={onBack}
+							onRightPress={onApplySelection}
+							rightSlot={({ disabled }) => (
+								<View
+									style={[
+										styles.headerApplyButton,
+										{ backgroundColor: theme.colors.primary, opacity: disabled ? 0.5 : 1 },
+									]}
+								>
+									<BAIText variant='body' style={[styles.headerApplyLabel, { color: theme.colors.onPrimary }]}>
+										Apply
+									</BAIText>
+								</View>
+							)}
+						/>
+					),
+				}}
+			/>
 			<BAIScreen tabbed padded={false} safeTop={false} safeBottom={false}>
 				<View style={[styles.screen, { paddingBottom: tabBarHeight + 8 }]}>
-					<BAISurface bordered padded={false} style={styles.card}>
-						<View style={styles.actionRow}>
+					<View style={styles.content}>
+						<View style={[styles.actionContainer, { borderColor, backgroundColor: theme.colors.surface }]}>
+							<View style={styles.actionRow}>
 							<BAIButton
 								variant='outline'
 								intent='neutral'
@@ -335,8 +350,9 @@ export function ModifierGroupApplySetPickerScreen({ mode }: Props) {
 								style={styles.actionButton}
 								disabled={productsQuery.isLoading || rows.length === 0 || selectedIds.length === rows.length}
 							>
-								Apply All
+								Add All
 							</BAIButton>
+							</View>
 						</View>
 						<View style={styles.listStateWrap}>
 							{productsQuery.isLoading ? (
@@ -372,10 +388,11 @@ export function ModifierGroupApplySetPickerScreen({ mode }: Props) {
 									)}
 									ItemSeparatorComponent={null}
 									contentContainerStyle={styles.listContent}
+									showsVerticalScrollIndicator={false}
 								/>
 							)}
 						</View>
-					</BAISurface>
+					</View>
 				</View>
 			</BAIScreen>
 		</>
@@ -389,20 +406,38 @@ const styles = StyleSheet.create({
 		paddingBottom: 12,
 		paddingTop: 0,
 	},
-	card: {
+	content: {
 		flex: 1,
-		borderRadius: 16,
-		overflow: "hidden",
+	},
+	actionContainer: {
+		borderWidth: StyleSheet.hairlineWidth,
+		borderRadius: 14,
+		paddingHorizontal: 10,
+		paddingTop: 8,
+		paddingBottom: 8,
+		marginBottom: 10,
 	},
 	actionRow: {
 		flexDirection: "row",
 		gap: 8,
-		paddingHorizontal: 10,
-		paddingTop: 10,
-		paddingBottom: 4,
+		paddingHorizontal: 0,
+		paddingTop: 0,
+		paddingBottom: 0,
 	},
 	actionButton: {
 		flex: 1,
+	},
+	headerApplyButton: {
+		minWidth: 112,
+		height: 42,
+		borderRadius: 999,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 18,
+		marginRight: 12,
+	},
+	headerApplyLabel: {
+		fontWeight: "600",
 	},
 	listStateWrap: {
 		flex: 1,
@@ -423,7 +458,7 @@ const styles = StyleSheet.create({
 	},
 	row: {
 		minHeight: 74,
-		paddingHorizontal: 10,
+		paddingHorizontal: 0,
 		paddingVertical: 6,
 		borderBottomWidth: StyleSheet.hairlineWidth,
 		flexDirection: "row",
