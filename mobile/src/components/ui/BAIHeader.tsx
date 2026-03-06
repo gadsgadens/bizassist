@@ -100,7 +100,7 @@ export function BAIHeader({
 			testID={testID}
 			style={[styles.root, { paddingTop: resolvedTopInset, backgroundColor: theme.colors.background }]}
 		>
-			<View style={[styles.bar, { height: resolvedBarHeight, paddingHorizontal: horizontalInset }]}> 
+			<View style={[styles.bar, { height: resolvedBarHeight, paddingHorizontal: horizontalInset }]}>
 				<View style={[styles.leftRail, { width: railSize }]}>
 					<BAIHeaderIconButton
 						variant={variant}
@@ -110,7 +110,9 @@ export function BAIHeader({
 					/>
 				</View>
 
-				<View style={[styles.centerRail, titleHorizontalPadding > 0 ? { paddingHorizontal: titleHorizontalPadding } : null]}>
+				<View
+					style={[styles.centerRail, titleHorizontalPadding > 0 ? { paddingHorizontal: titleHorizontalPadding } : null]}
+				>
 					<BAIText variant='title' numberOfLines={1} ellipsizeMode='tail' style={styles.title}>
 						{title}
 					</BAIText>

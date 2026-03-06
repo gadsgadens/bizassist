@@ -1372,217 +1372,216 @@ export function ModifierGroupUpsertScreen({ mode, intent }: Props) {
 	return (
 		<>
 			<Stack.Screen options={{ headerShown: false }} />
-			<BAIScreen
-				tabbed
-				padded={false}
-				safeTop={false}
-				safeBottom={false}
-				safeAreaGradientBottom
-				style={styles.root}
-			>
+			<BAIScreen tabbed padded={false} safeTop={false} safeBottom={false} safeAreaGradientBottom style={styles.root}>
 				<BAIHeader title={headerTitle} titleHorizontalPadding={30} variant='exit' onLeftPress={guardedExit} />
 				<TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
 					<View style={styles.wrap}>
 						<View style={styles.contentWrap}>
 							<BAIGovernedScrollableLayout
-									top={
-										<View style={styles.topSection}>
-											<View
-												style={[
-													styles.modifierSetConfigContainer,
-													{
-														borderColor: outline,
-													},
+								top={
+									<View style={styles.topSection}>
+										<View
+											style={[
+												styles.modifierSetConfigContainer,
+												{
+													borderColor: outline,
+												},
+											]}
+										>
+											<View style={styles.topActionRow}>
+												<BAIButton
+													variant='outline'
+													intent='neutral'
+													shape='pill'
+													onPress={guardedExit}
+													disabled={!!busy?.isBusy}
+													style={styles.topActionButton}
+												>
+													Cancel
+												</BAIButton>
+												<BAIButton
+													variant='solid'
+													intent='primary'
+													shape='pill'
+													onPress={onSave}
+													disabled={isSaveDisabled}
+													style={styles.topActionButton}
+												>
+													Save
+												</BAIButton>
+											</View>
+											<View>
+												<BAITextInput
+													label='Modifier Set Name'
+													value={name}
+													onChangeText={(value) => setName(clampFieldValue(value, MODIFIER_SET_NAME_CHAR_LIMIT))}
+													maxLength={MODIFIER_SET_NAME_CHAR_LIMIT}
+													textColor={theme.colors.onSurface}
+												/>
+											</View>
+											<Pressable
+												onPress={onPressApplySet}
+												style={({ pressed }) => [
+													styles.applySetRow,
+													controlSurfaceInteractive,
+													pressed ? { opacity: 0.86 } : null,
 												]}
 											>
-												<View style={styles.topActionRow}>
-													<BAIButton
-														variant='outline'
-														intent='neutral'
-														shape='pill'
-														onPress={guardedExit}
-														disabled={!!busy?.isBusy}
-														style={styles.topActionButton}
-													>
-														Cancel
-													</BAIButton>
-													<BAIButton
-														variant='solid'
-														intent='primary'
-														shape='pill'
-														onPress={onSave}
-														disabled={isSaveDisabled}
-														style={styles.topActionButton}
-													>
-														Save
-													</BAIButton>
-												</View>
-												<View>
-													<BAITextInput
-														label='Modifier Set Name'
-														value={name}
-														onChangeText={(value) => setName(clampFieldValue(value, MODIFIER_SET_NAME_CHAR_LIMIT))}
-														maxLength={MODIFIER_SET_NAME_CHAR_LIMIT}
-														textColor={theme.colors.onSurface}
+												<BAIText variant='subtitle'>Apply Set</BAIText>
+												<View style={styles.applySetRight}>
+													<BAIText variant='subtitle'>{applySetCountLabel}</BAIText>
+													<MaterialCommunityIcons
+														name='chevron-right'
+														size={24}
+														color={theme.colors.onSurfaceVariant ?? theme.colors.onSurface}
 													/>
 												</View>
+											</Pressable>
+											<View style={[styles.advancedRulesContainer, controlSurfaceInteractive]}>
 												<Pressable
-													onPress={onPressApplySet}
-													style={({ pressed }) => [
-														styles.applySetRow,
-														controlSurfaceInteractive,
-														pressed ? { opacity: 0.86 } : null,
-													]}
+													onPress={onToggleSelectionRules}
+													style={({ pressed }) => [styles.advancedRulesRow, pressed ? { opacity: 0.86 } : null]}
 												>
-													<BAIText variant='subtitle'>Apply Set</BAIText>
-													<View style={styles.applySetRight}>
-														<BAIText variant='subtitle'>{applySetCountLabel}</BAIText>
-														<MaterialCommunityIcons
-															name='chevron-right'
-															size={24}
-															color={theme.colors.onSurfaceVariant ?? theme.colors.onSurface}
-														/>
+													<View style={styles.advancedRulesLabelWrap}>
+														<BAIText variant='body'>Advanced rules</BAIText>
+														<BAIText variant='caption' muted>
+															{rulesSummary}
+														</BAIText>
 													</View>
+													<MaterialCommunityIcons
+														name={showSelectionRules ? "chevron-up" : "chevron-down"}
+														size={24}
+														color={theme.colors.onSurfaceVariant ?? theme.colors.onSurface}
+													/>
 												</Pressable>
-												<View style={[styles.advancedRulesContainer, controlSurfaceInteractive]}>
-													<Pressable
-														onPress={onToggleSelectionRules}
-														style={({ pressed }) => [styles.advancedRulesRow, pressed ? { opacity: 0.86 } : null]}
-													>
-														<View style={styles.advancedRulesLabelWrap}>
-															<BAIText variant='body'>Advanced rules</BAIText>
-															<BAIText variant='caption' muted>
-																{rulesSummary}
-															</BAIText>
+												{showSelectionRules ? (
+													<View>
+														<View style={styles.rulesRow}>
+															<BAITextInput
+																label='Minimum Selections'
+																value={minSelected}
+																onChangeText={(value) =>
+																	setMinSelected(clampSelectionRuleInput(value, 0, MODIFIER_SELECTION_RULE_CAP))
+																}
+																keyboardType='number-pad'
+																maxLength={String(MODIFIER_SELECTION_RULE_CAP).length}
+																style={styles.ruleInput}
+															/>
+															<BAITextInput
+																label='Maximum Selections'
+																value={maxSelected}
+																onChangeText={(value) =>
+																	setMaxSelected(clampSelectionRuleInput(value, 1, MODIFIER_SELECTION_RULE_CAP))
+																}
+																keyboardType='number-pad'
+																maxLength={String(MODIFIER_SELECTION_RULE_CAP).length}
+																style={styles.ruleInput}
+															/>
 														</View>
-														<MaterialCommunityIcons
-															name={showSelectionRules ? "chevron-up" : "chevron-down"}
-															size={24}
-															color={theme.colors.onSurfaceVariant ?? theme.colors.onSurface}
-														/>
-													</Pressable>
-													{showSelectionRules ? (
-														<View>
-															<View style={styles.rulesRow}>
-																<BAITextInput
-																	label='Minimum Selections'
-																	value={minSelected}
-																	onChangeText={(value) =>
-																		setMinSelected(clampSelectionRuleInput(value, 0, MODIFIER_SELECTION_RULE_CAP))
-																	}
-																	keyboardType='number-pad'
-																	maxLength={String(MODIFIER_SELECTION_RULE_CAP).length}
-																	style={styles.ruleInput}
-																/>
-																<BAITextInput
-																	label='Maximum Selections'
-																	value={maxSelected}
-																	onChangeText={(value) =>
-																		setMaxSelected(clampSelectionRuleInput(value, 1, MODIFIER_SELECTION_RULE_CAP))
-																	}
-																	keyboardType='number-pad'
-																	maxLength={String(MODIFIER_SELECTION_RULE_CAP).length}
-																	style={styles.ruleInput}
-																/>
-															</View>
-														</View>
-													) : null}
-												</View>
-											</View>
-											<View style={styles.modifiersHeader}>
-												<BAIText variant='subtitle' style={styles.modifiersTitle}>
-													Modifiers
-												</BAIText>
-												{intent === "edit" ? (
-													<View style={styles.optionTabsWrap}>
-														<BAIGroupTabs<ModifierOptionsTab>
-															tabs={optionTabs}
-															value={optionsTab}
-															onChange={setOptionsTab}
-															countFormatter={(count) => formatCompactNumber(count, countryCode)}
-														/>
 													</View>
-												) : null}
-												{error ? (
-													<BAIText variant='caption' style={[styles.errorText, { color: theme.colors.error }]}>
-														{error}
-													</BAIText>
 												) : null}
 											</View>
 										</View>
-									}
-									scrollArea={
-										optionsTab === "archived" ? (
-											<ScrollView
-												style={styles.modifiersList}
-												contentContainerStyle={[
-													styles.modifiersListContent,
-													{ borderTopWidth: 1, borderTopColor: theme.colors.outline },
-													{ paddingBottom: Math.max(0, modifiersListHeight * 0.75) },
-												]}
-												onLayout={(event) => setModifiersListHeight(event.nativeEvent.layout.height)}
-												showsVerticalScrollIndicator={false}
-												keyboardShouldPersistTaps='handled'
-												keyboardDismissMode='on-drag'
-											>
-												{archivedVisibleOptionRows.map((row) => renderModifierRow(row))}
-												{archivedOptionsEmpty ? (
-													<BAIText variant='body' muted style={styles.emptyOptionsText}>
-														No archived modifiers.
-													</BAIText>
-												) : null}
-												{showArchivedDestructiveAction ? (
-													<Pressable
-														onPress={openArchiveConfirm}
-														style={({ pressed }) => [
-															styles.archiveButton,
-															archiveButtonSurface,
-															pressed ? { opacity: 0.92 } : null,
-														]}
+										<View style={styles.modifiersHeader}>
+											<BAIText variant='subtitle' style={styles.modifiersTitle}>
+												Modifiers
+											</BAIText>
+											{intent === "edit" ? (
+												<View style={styles.optionTabsWrap}>
+													<BAIGroupTabs<ModifierOptionsTab>
+														tabs={optionTabs}
+														value={optionsTab}
+														onChange={setOptionsTab}
+														countFormatter={(count) => formatCompactNumber(count, countryCode)}
+													/>
+												</View>
+											) : null}
+											{error ? (
+												<BAIText variant='caption' style={[styles.errorText, { color: theme.colors.error }]}>
+													{error}
+												</BAIText>
+											) : null}
+										</View>
+									</View>
+								}
+								scrollArea={
+									optionsTab === "archived" ? (
+										<ScrollView
+											style={styles.modifiersList}
+											contentContainerStyle={[
+												styles.modifiersListContent,
+												{ borderTopWidth: 1, borderTopColor: theme.colors.outline },
+												{ paddingBottom: Math.max(0, modifiersListHeight * 0.75) },
+											]}
+											onLayout={(event) => setModifiersListHeight(event.nativeEvent.layout.height)}
+											showsVerticalScrollIndicator={false}
+											keyboardShouldPersistTaps='handled'
+											keyboardDismissMode='on-drag'
+										>
+											{archivedVisibleOptionRows.map((row) => renderModifierRow(row))}
+											{archivedOptionsEmpty ? (
+												<BAIText variant='body' muted style={styles.emptyOptionsText}>
+													No archived modifiers.
+												</BAIText>
+											) : null}
+											{showArchivedDestructiveAction ? (
+												<Pressable
+													onPress={openArchiveConfirm}
+													style={({ pressed }) => [
+														styles.archiveButton,
+														archiveButtonSurface,
+														pressed ? { opacity: 0.92 } : null,
+													]}
+												>
+													<BAIText
+														variant='subtitle'
+														style={[styles.archiveButtonText, { color: archiveButtonTextColor }]}
 													>
-														<BAIText variant='subtitle' style={[styles.archiveButtonText, { color: archiveButtonTextColor }]}>
-															{destructiveActionLabel}
-														</BAIText>
-													</Pressable>
-												) : null}
-											</ScrollView>
-										) : (
-											<ScrollView
-												style={styles.modifiersList}
-												contentContainerStyle={[
-													styles.modifiersListContent,
-													{ borderTopWidth: 1, borderTopColor: theme.colors.outline },
-													{ paddingBottom: Math.max(0, modifiersListHeight * 0.75) },
-												]}
-												onLayout={(event) => setModifiersListHeight(event.nativeEvent.layout.height)}
-												showsVerticalScrollIndicator={false}
-												keyboardShouldPersistTaps='handled'
-												keyboardDismissMode='on-drag'
-											>
-												{activeVisibleOptionRows.map((row) => renderModifierRow(row))}
-												{activeOptionsEmpty ? (
-													<BAIText variant='body' muted style={styles.emptyOptionsText}>
-														No active modifiers.
+														{destructiveActionLabel}
 													</BAIText>
-												) : null}
-												{showActiveDestructiveAction ? (
-													<Pressable
-														onPress={openArchiveConfirm}
-														style={({ pressed }) => [
-															styles.archiveButton,
-															archiveButtonSurface,
-															pressed ? { opacity: 0.92 } : null,
-														]}
+												</Pressable>
+											) : null}
+										</ScrollView>
+									) : (
+										<ScrollView
+											style={styles.modifiersList}
+											contentContainerStyle={[
+												styles.modifiersListContent,
+												{ borderTopWidth: 1, borderTopColor: theme.colors.outline },
+												{ paddingBottom: Math.max(0, modifiersListHeight * 0.75) },
+											]}
+											onLayout={(event) => setModifiersListHeight(event.nativeEvent.layout.height)}
+											showsVerticalScrollIndicator={false}
+											keyboardShouldPersistTaps='handled'
+											keyboardDismissMode='on-drag'
+										>
+											{activeVisibleOptionRows.map((row) => renderModifierRow(row))}
+											{activeOptionsEmpty ? (
+												<BAIText variant='body' muted style={styles.emptyOptionsText}>
+													No active modifiers.
+												</BAIText>
+											) : null}
+											{showActiveDestructiveAction ? (
+												<Pressable
+													onPress={openArchiveConfirm}
+													style={({ pressed }) => [
+														styles.archiveButton,
+														archiveButtonSurface,
+														pressed ? { opacity: 0.92 } : null,
+													]}
+												>
+													<BAIText
+														variant='subtitle'
+														style={[styles.archiveButtonText, { color: archiveButtonTextColor }]}
 													>
-														<BAIText variant='subtitle' style={[styles.archiveButtonText, { color: archiveButtonTextColor }]}>
-															{destructiveActionLabel}
-														</BAIText>
-													</Pressable>
-												) : null}
-											</ScrollView>
-										)
-									}
-								/>
+														{destructiveActionLabel}
+													</BAIText>
+												</Pressable>
+											) : null}
+										</ScrollView>
+									)
+								}
+							/>
 						</View>
 					</View>
 				</TouchableWithoutFeedback>

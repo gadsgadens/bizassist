@@ -214,10 +214,7 @@ export function ModifiersLedgerScreen({
 					)}
 				/>
 				<TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
-					<SettingsScreenLayout
-						screenStyle={styles.layoutScreen}
-						maxWidth={layout === "tablet" ? 720 : undefined}
-					>
+					<SettingsScreenLayout screenStyle={styles.layoutScreen} maxWidth={layout === "tablet" ? 720 : undefined}>
 						<BAISurface style={[styles.card, { borderColor }]} padded bordered>
 							<SettingsSectionTitle>Modifiers</SettingsSectionTitle>
 							<View
@@ -252,55 +249,55 @@ export function ModifiersLedgerScreen({
 							</View>
 
 							<View style={styles.listSection}>
-									{groupsQuery.isLoading ? (
-										<View style={styles.stateWrap}>
-											<BAIText variant='body'>Loading modifier sets...</BAIText>
-										</View>
-									) : groupsQuery.isError ? (
-										<View style={styles.stateWrap}>
-											<BAIRetryButton compact onPress={() => groupsQuery.refetch()}>
-												Retry
-											</BAIRetryButton>
-										</View>
-									) : items.length === 0 ? (
-										<BAISurface bordered style={styles.emptyWrap}>
-											<BAIText variant='body'>
-												{hasSearch
-													? `No matching ${filter === "active" ? "active" : "archived"} modifier sets.`
-													: filter === "active"
-														? "No active modifier sets."
-														: "No archived modifier sets."}
-											</BAIText>
-											<BAIText variant='caption' muted>
-												{hasSearch
-													? "Try a different search term."
-													: filter === "active"
-														? "Create your first modifier set."
-														: "Archived modifier sets will appear here."}
-											</BAIText>
-											{!hasSearch && filter === "active" ? (
-												<BAIButton
-													variant='solid'
-													intent='primary'
-													shape='pill'
-													onPress={onCreate}
-													style={styles.emptyAction}
-												>
-													Create Modifier Set
-												</BAIButton>
-											) : null}
-										</BAISurface>
-									) : (
-										<FlatList
-											data={items}
-											keyExtractor={(item) => item.id}
-											renderItem={({ item }) => <Row item={item} onOpen={onOpen} countryCode={countryCode} />}
-											style={styles.list}
-											contentContainerStyle={styles.listContent}
-											keyboardShouldPersistTaps='handled'
-											showsVerticalScrollIndicator={false}
-										/>
-									)}
+								{groupsQuery.isLoading ? (
+									<View style={styles.stateWrap}>
+										<BAIText variant='body'>Loading modifier sets...</BAIText>
+									</View>
+								) : groupsQuery.isError ? (
+									<View style={styles.stateWrap}>
+										<BAIRetryButton compact onPress={() => groupsQuery.refetch()}>
+											Retry
+										</BAIRetryButton>
+									</View>
+								) : items.length === 0 ? (
+									<BAISurface bordered style={styles.emptyWrap}>
+										<BAIText variant='body'>
+											{hasSearch
+												? `No matching ${filter === "active" ? "active" : "archived"} modifier sets.`
+												: filter === "active"
+													? "No active modifier sets."
+													: "No archived modifier sets."}
+										</BAIText>
+										<BAIText variant='caption' muted>
+											{hasSearch
+												? "Try a different search term."
+												: filter === "active"
+													? "Create your first modifier set."
+													: "Archived modifier sets will appear here."}
+										</BAIText>
+										{!hasSearch && filter === "active" ? (
+											<BAIButton
+												variant='solid'
+												intent='primary'
+												shape='pill'
+												onPress={onCreate}
+												style={styles.emptyAction}
+											>
+												Create Modifier Set
+											</BAIButton>
+										) : null}
+									</BAISurface>
+								) : (
+									<FlatList
+										data={items}
+										keyExtractor={(item) => item.id}
+										renderItem={({ item }) => <Row item={item} onOpen={onOpen} countryCode={countryCode} />}
+										style={styles.list}
+										contentContainerStyle={styles.listContent}
+										keyboardShouldPersistTaps='handled'
+										showsVerticalScrollIndicator={false}
+									/>
+								)}
 							</View>
 						</BAISurface>
 					</SettingsScreenLayout>

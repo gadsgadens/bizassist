@@ -676,7 +676,11 @@ export default function PosTablet() {
 							{visibleCatalogItems.length === 0 ? (
 								<View style={styles.emptyPane}>
 									<BAIText variant='body' muted>
-										{isTrulyError ? "Unable to load catalog." : isSearchEmptyState ? "No results found." : "No items yet."}
+										{isTrulyError
+											? "Unable to load catalog."
+											: isSearchEmptyState
+												? "No results found."
+												: "No items yet."}
 									</BAIText>
 									{isSearchEmptyState ? (
 										<BAIText variant='caption' muted>

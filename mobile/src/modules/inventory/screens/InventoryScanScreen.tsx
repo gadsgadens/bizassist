@@ -188,7 +188,13 @@ export default function InventoryScanScreen() {
 						<View style={styles.actions}>
 							<BAICTAButton onPress={onRequestCameraPermission}>Allow Camera</BAICTAButton>
 							{isPermissionBlocked ? (
-								<BAIButton mode='outlined' onPress={onOpenSettings} shape='pill' widthPreset='standard' intent='primary'>
+								<BAIButton
+									mode='outlined'
+									onPress={onOpenSettings}
+									shape='pill'
+									widthPreset='standard'
+									intent='primary'
+								>
 									Open Settings
 								</BAIButton>
 							) : null}
@@ -207,7 +213,7 @@ export default function InventoryScanScreen() {
 			<Stack.Screen options={{ headerShown: false }} />
 			<BAIScreen padded={false} safeTop={false} safeBottom={false} style={styles.root}>
 				<BAIHeader title='Scan' variant='back' onLeftPress={onCancel} />
-				<View style={[styles.full, { backgroundColor: theme.colors.background }]}> 
+				<View style={[styles.full, { backgroundColor: theme.colors.background }]}>
 					<View style={styles.preview}>
 						<CameraView
 							style={StyleSheet.absoluteFill}

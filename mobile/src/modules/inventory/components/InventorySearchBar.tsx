@@ -45,7 +45,7 @@ export function InventorySearchBar({
 			// BAISearchBar caps, but we keep this as an additional safety net.
 			onChangeText(v.length > FIELD_LIMITS.search ? v.slice(0, FIELD_LIMITS.search) : v);
 		},
-		[onChangeText]
+		[onChangeText],
 	);
 
 	const handleSubmit = useCallback(() => {

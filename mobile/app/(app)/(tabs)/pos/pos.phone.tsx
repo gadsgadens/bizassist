@@ -924,7 +924,7 @@ export default function PosPhone() {
 						}
 						bottom={
 							tab === "CATALOG" && cartLines.length > 0 ? (
-								<View style={[styles.cartSummary, { borderColor, backgroundColor: theme.colors.surface }]}> 
+								<View style={[styles.cartSummary, { borderColor, backgroundColor: theme.colors.surface }]}>
 									<View style={styles.cartSummaryLeft}>
 										<BAIText variant='subtitle' numberOfLines={1}>
 											Cart Total
@@ -939,7 +939,7 @@ export default function PosPhone() {
 									</BAIButton>
 								</View>
 							) : tab === "CART" ? (
-								<View style={[styles.checkoutSection, { borderColor, backgroundColor: theme.colors.surface }]}> 
+								<View style={[styles.checkoutSection, { borderColor, backgroundColor: theme.colors.surface }]}>
 									<View style={styles.checkoutArea}>
 										<View style={styles.checkoutRow}>
 											<BAIText variant='body'>Total</BAIText>

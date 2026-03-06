@@ -265,11 +265,7 @@ function DetailMetaRow({
 	isLast?: boolean;
 }) {
 	return (
-		<View
-			style={[
-				!isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: borderColor },
-			]}
-		>
+		<View style={[!isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: borderColor }]}>
 			<BAIText variant='caption' muted style={styles.metaLabel}>
 				{label}
 			</BAIText>

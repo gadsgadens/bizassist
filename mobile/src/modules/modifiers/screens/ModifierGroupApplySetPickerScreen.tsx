@@ -272,15 +272,12 @@ export function ModifierGroupApplySetPickerScreen({ mode }: Props) {
 	const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 	const allRowIds = useMemo(() => rows.map((item) => item.id), [rows]);
 
-	const onToggle = useCallback(
-		(id: string) => {
-			setSelectedIds((prev) => {
-				const exists = prev.includes(id);
-				return exists ? prev.filter((value) => value !== id) : [...prev, id];
-			});
-		},
-		[],
-	);
+	const onToggle = useCallback((id: string) => {
+		setSelectedIds((prev) => {
+			const exists = prev.includes(id);
+			return exists ? prev.filter((value) => value !== id) : [...prev, id];
+		});
+	}, []);
 
 	const onClearAll = useCallback(() => {
 		setSelectedIds([]);
@@ -332,26 +329,26 @@ export function ModifierGroupApplySetPickerScreen({ mode }: Props) {
 					<View style={styles.content}>
 						<View style={[styles.actionContainer, { borderColor, backgroundColor: theme.colors.surface }]}>
 							<View style={styles.actionRow}>
-							<BAIButton
-								variant='outline'
-								intent='neutral'
-								shape='pill'
-								onPress={onClearAll}
-								style={styles.actionButton}
-								disabled={productsQuery.isLoading || selectedIds.length === 0}
-							>
-								Clear All
-							</BAIButton>
-							<BAIButton
-								variant='outline'
-								intent='neutral'
-								shape='pill'
-								onPress={onApplyAll}
-								style={styles.actionButton}
-								disabled={productsQuery.isLoading || rows.length === 0 || selectedIds.length === rows.length}
-							>
-								Add All
-							</BAIButton>
+								<BAIButton
+									variant='outline'
+									intent='neutral'
+									shape='pill'
+									onPress={onClearAll}
+									style={styles.actionButton}
+									disabled={productsQuery.isLoading || selectedIds.length === 0}
+								>
+									Clear All
+								</BAIButton>
+								<BAIButton
+									variant='outline'
+									intent='neutral'
+									shape='pill'
+									onPress={onApplyAll}
+									style={styles.actionButton}
+									disabled={productsQuery.isLoading || rows.length === 0 || selectedIds.length === rows.length}
+								>
+									Add All
+								</BAIButton>
 							</View>
 						</View>
 						<View style={styles.listStateWrap}>

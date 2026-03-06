@@ -243,7 +243,7 @@ export function ModifierGroupDetailScreen({ mode }: { mode: "settings" | "invent
 										</BAIButton>
 									</View>
 								) : null}
-								<View style={[styles.tableHead, { borderBottomColor: outline }]}> 
+								<View style={[styles.tableHead, { borderBottomColor: outline }]}>
 									<BAIText variant='subtitle'>Modifiers</BAIText>
 									<BAIText variant='subtitle'>Availability</BAIText>
 								</View>
@@ -254,14 +254,9 @@ export function ModifierGroupDetailScreen({ mode }: { mode: "settings" | "invent
 										keyExtractor={(item) => item.id}
 										style={styles.rowsList}
 										renderItem={({ item }) => (
-											<BAISurface style={[styles.optionRow, { borderColor: outline, backgroundColor: surfaceAlt }]}> 
+											<BAISurface style={[styles.optionRow, { borderColor: outline, backgroundColor: surfaceAlt }]}>
 												<View style={styles.optionInlineContent}>
-													<BAIText
-														variant='body'
-														numberOfLines={1}
-														ellipsizeMode='tail'
-														style={styles.optionNameText}
-													>
+													<BAIText variant='body' numberOfLines={1} ellipsizeMode='tail' style={styles.optionNameText}>
 														{item.name}
 													</BAIText>
 													<View style={styles.optionAvailabilityInline}>
