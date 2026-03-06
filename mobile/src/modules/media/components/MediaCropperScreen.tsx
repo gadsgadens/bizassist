@@ -48,6 +48,7 @@ const HARD_BYTES = 8 * 1024 * 1024; // 8 MB hard cap
 const MAX_DIMENSION = 2048; // long edge
 const MIN_DIMENSION = POS_TILE_MIN_SIZE_PX;
 const MAX_ZOOM = 3.0;
+const CROP_SURFACE_HORIZONTAL_MARGIN = 12;
 
 function clamp(val: number, min: number, max: number) {
 	return Math.max(min, Math.min(max, val));
@@ -153,7 +154,7 @@ export default function MediaCropperScreen({
 	const theme = useTheme();
 	const { withBusy } = useAppBusy();
 	const qc = useQueryClient();
-	const { width: screenWidth } = useWindowDimensions();
+	const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 	const [surfaceWidth, setSurfaceWidth] = useState<number | null>(null);
 	const toScopedRoute = useCallback((route: string) => mapInventoryRouteToScope(route, routeScope), [routeScope]);
 	const rootRoute = useMemo(() => inventoryScopeRoot(routeScope), [routeScope]);
@@ -177,16 +178,24 @@ export default function MediaCropperScreen({
 	const rootReturnTo = normalizeReturnTo(params[ROOT_RETURN_TO_KEY]);
 	const tileLabelParam = safeString(params[TILE_LABEL_KEY]);
 
-	const containerWidth = useMemo(() => Math.max(0, surfaceWidth ?? screenWidth - 32), [screenWidth, surfaceWidth]);
+	const containerWidth = useMemo(
+		() => Math.max(0, surfaceWidth ?? screenWidth - CROP_SURFACE_HORIZONTAL_MARGIN * 2),
+		[screenWidth, surfaceWidth],
+	);
 
 	const frameWidth = useMemo(() => {
 		const available = Math.max(0, containerWidth);
-		const size = Math.min(frameMax, available);
-		return Math.max(frameMin, size);
+		const minResponsive = Math.min(frameMin, available);
+		const maxResponsive = Math.min(frameMax, available);
+		return Math.max(minResponsive, maxResponsive);
 	}, [containerWidth, frameMax, frameMin]);
 	const frameHeight = useMemo(() => Math.round(frameWidth / aspectRatio), [aspectRatio, frameWidth]);
 	const framePaddingX = useMemo(() => Math.max(0, (containerWidth - frameWidth) / 2), [containerWidth, frameWidth]);
-	const framePaddingY = 80;
+	const framePaddingY = useMemo(() => {
+		// Keeps the cropper balanced across short and tall devices.
+		const responsive = Math.round(screenHeight * 0.08);
+		return clampInt(responsive, 44, 80);
+	}, [screenHeight]);
 	const stageWidth = frameWidth + framePaddingX * 2;
 	const stageHeight = frameHeight + framePaddingY * 2;
 
@@ -324,11 +333,10 @@ export default function MediaCropperScreen({
 	const headerVariant = headerClass === "process" ? "exit" : "back";
 
 	const borderColor = theme.colors.outlineVariant ?? theme.colors.outline;
-	const overlayShadeColor = "rgba(0,0,0,0.5)";
+	const overlayShadeColor = "rgba(0,0,0,0.18)";
 	const frameGuideColor = "#FFFFFF";
-	const frameCornerSize = 38;
-	const frameCornerThickness = 4;
-	const frameEdgeHandle = 40;
+	const frameCornerSize = 28;
+	const frameCornerThickness = 3;
 
 	const scale = useSharedValue(1);
 	const translateX = useSharedValue(0);
@@ -581,8 +589,10 @@ export default function MediaCropperScreen({
 			<BAIScreen
 				padded={false}
 				tabbed
+				scroll
 				safeTop={false}
 				style={[styles.root, { backgroundColor: theme.colors.background }]}
+				scrollProps={{ showsVerticalScrollIndicator: false }}
 			>
 				<BAISurface style={[styles.surface, { borderColor }]} padded>
 					<View style={styles.surfaceContent} onLayout={onSurfaceLayout}>
@@ -673,7 +683,8 @@ export default function MediaCropperScreen({
 											width: frameWidth,
 											height: frameHeight,
 											borderWidth: 1,
-											borderColor: frameGuideColor,
+											borderColor: "rgba(255,255,255,0.25)",
+											backgroundColor: "rgba(255,255,255,0.06)",
 										},
 									]}
 								>
@@ -688,6 +699,7 @@ export default function MediaCropperScreen({
 													height: frameCornerSize,
 													borderTopWidth: frameCornerThickness,
 													borderLeftWidth: frameCornerThickness,
+													borderTopLeftRadius: 8,
 												},
 											]}
 										/>
@@ -701,6 +713,7 @@ export default function MediaCropperScreen({
 													height: frameCornerSize,
 													borderTopWidth: frameCornerThickness,
 													borderRightWidth: frameCornerThickness,
+													borderTopRightRadius: 8,
 												},
 											]}
 										/>
@@ -714,6 +727,7 @@ export default function MediaCropperScreen({
 													height: frameCornerSize,
 													borderBottomWidth: frameCornerThickness,
 													borderLeftWidth: frameCornerThickness,
+													borderBottomLeftRadius: 8,
 												},
 											]}
 										/>
@@ -727,59 +741,7 @@ export default function MediaCropperScreen({
 													height: frameCornerSize,
 													borderBottomWidth: frameCornerThickness,
 													borderRightWidth: frameCornerThickness,
-												},
-											]}
-										/>
-
-										<View
-											style={[
-												styles.edgeHandleH,
-												{
-													backgroundColor: frameGuideColor,
-													width: frameEdgeHandle,
-													height: frameCornerThickness,
-													top: 0,
-													left: "50%",
-													transform: [{ translateX: -frameEdgeHandle / 2 }],
-												},
-											]}
-										/>
-										<View
-											style={[
-												styles.edgeHandleH,
-												{
-													backgroundColor: frameGuideColor,
-													width: frameEdgeHandle,
-													height: frameCornerThickness,
-													bottom: 0,
-													left: "50%",
-													transform: [{ translateX: -frameEdgeHandle / 2 }],
-												},
-											]}
-										/>
-										<View
-											style={[
-												styles.edgeHandleV,
-												{
-													backgroundColor: frameGuideColor,
-													width: frameCornerThickness,
-													height: frameEdgeHandle,
-													left: 0,
-													top: "50%",
-													transform: [{ translateY: -frameEdgeHandle / 2 }],
-												},
-											]}
-										/>
-										<View
-											style={[
-												styles.edgeHandleV,
-												{
-													backgroundColor: frameGuideColor,
-													width: frameCornerThickness,
-													height: frameEdgeHandle,
-													right: 0,
-													top: "50%",
-													transform: [{ translateY: -frameEdgeHandle / 2 }],
+													borderBottomRightRadius: 8,
 												},
 											]}
 										/>
@@ -827,9 +789,9 @@ export default function MediaCropperScreen({
 const styles = StyleSheet.create({
 	root: { flex: 1 },
 	surface: {
-		marginHorizontal: 16,
+		marginHorizontal: CROP_SURFACE_HORIZONTAL_MARGIN,
 		marginTop: 0,
-		marginBottom: 16,
+		marginBottom: 100,
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 18,
 		alignItems: "center",
@@ -857,6 +819,7 @@ const styles = StyleSheet.create({
 		position: "absolute",
 		borderWidth: 0,
 		borderRadius: 0,
+		overflow: "hidden",
 	},
 	frameGuides: {
 		position: "absolute",
@@ -866,18 +829,10 @@ const styles = StyleSheet.create({
 	frameCorner: {
 		position: "absolute",
 	},
-	cornerTL: { top: 0, left: 0 },
-	cornerTR: { top: 0, right: 0 },
-	cornerBL: { bottom: 0, left: 0 },
-	cornerBR: { bottom: 0, right: 0 },
-	edgeHandleH: {
-		position: "absolute",
-		borderRadius: 2,
-	},
-	edgeHandleV: {
-		position: "absolute",
-		borderRadius: 2,
-	},
+	cornerTL: { top: 14, left: 14 },
+	cornerTR: { top: 14, right: 14 },
+	cornerBL: { bottom: 14, left: 14 },
+	cornerBR: { bottom: 14, right: 14 },
 	overlayLayer: {
 		position: "absolute",
 		top: 0,
