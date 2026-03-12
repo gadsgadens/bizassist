@@ -16,13 +16,7 @@ type BAIBadgeProps = {
 	textStyle?: StyleProp<TextStyle>;
 };
 
-export function BAIBadge({
-	children,
-	variant = "neutral",
-	size = "md",
-	style,
-	textStyle,
-}: BAIBadgeProps) {
+export function BAIBadge({ children, variant = "neutral", size = "md", style, textStyle }: BAIBadgeProps) {
 	const theme = useTheme();
 
 	const palette = useMemo(() => {

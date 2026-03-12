@@ -146,9 +146,7 @@ export function BAIScreen({
 						style={[styles.safeGradientOverlay, styles.safeGradientTop, { height: topSafeHeight }]}
 					/>
 				) : null}
-				{showBottomSafeGradient ? (
-					<BAIBottomSafeAreaScrim tabbed={tabbed} />
-				) : null}
+				{showBottomSafeGradient ? <BAIBottomSafeAreaScrim tabbed={tabbed} /> : null}
 			</View>
 		);
 	}
@@ -163,9 +161,7 @@ export function BAIScreen({
 					style={[styles.safeGradientOverlay, styles.safeGradientTop, { height: topSafeHeight }]}
 				/>
 			) : null}
-			{showBottomSafeGradient ? (
-				<BAIBottomSafeAreaScrim tabbed={tabbed} />
-			) : null}
+			{showBottomSafeGradient ? <BAIBottomSafeAreaScrim tabbed={tabbed} /> : null}
 		</View>
 	);
 }

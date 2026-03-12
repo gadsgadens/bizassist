@@ -228,7 +228,9 @@ export default function InventoryCategoryDetailScreen() {
 		(productId: string) => {
 			if (isUiDisabled) return;
 			if (!lockNav()) return;
-			router.push(`/(app)/(tabs)/inventory/categories/${encodeURIComponent(id)}/items/${encodeURIComponent(productId)}` as any);
+			router.push(
+				`/(app)/(tabs)/inventory/categories/${encodeURIComponent(id)}/items/${encodeURIComponent(productId)}` as any,
+			);
 		},
 		[id, isUiDisabled, lockNav, router],
 	);

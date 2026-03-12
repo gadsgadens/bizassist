@@ -56,11 +56,7 @@ export type BAIBottomSafeAreaScrimProps = {
 	style?: StyleProp<ViewStyle>;
 };
 
-export function BAIBottomSafeAreaScrim({
-	tabbed = false,
-	extraHeight,
-	style,
-}: BAIBottomSafeAreaScrimProps) {
+export function BAIBottomSafeAreaScrim({ tabbed = false, extraHeight, style }: BAIBottomSafeAreaScrimProps) {
 	const { bottom } = useSafeAreaInsets();
 	const theme = useTheme();
 	const backgroundColor = useAppBackground();
@@ -82,13 +78,7 @@ export function BAIBottomSafeAreaScrim({
 		return null;
 	}
 
-	return (
-		<LinearGradient
-			pointerEvents='none'
-			colors={colors}
-			style={[styles.scrim, { height }, style]}
-		/>
-	);
+	return <LinearGradient pointerEvents='none' colors={colors} style={[styles.scrim, { height }, style]} />;
 }
 
 const styles = StyleSheet.create({
