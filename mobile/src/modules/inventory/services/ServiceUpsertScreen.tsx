@@ -879,7 +879,6 @@ export function ServiceUpsertScreen(props: {
 					let id = resolvedServiceId;
 					if (mode === "create") {
 						const created = await inventoryApi.createProduct(payload as any);
-						patchPosCatalogProductCaches(queryClient, created);
 						id = String((created as any)?.id ?? "").trim();
 					} else {
 						if (!id) throw new Error("Missing service id.");

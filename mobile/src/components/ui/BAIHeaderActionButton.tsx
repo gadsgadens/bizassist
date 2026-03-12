@@ -5,6 +5,9 @@ import { useTheme } from "react-native-paper";
 import { BAIText } from "@/components/ui/BAIText";
 import { baiColors } from "@/theme/baiColors";
 
+const HEADER_ACTION_HEIGHT = 44;
+const HEADER_ACTION_RADIUS = HEADER_ACTION_HEIGHT / 2;
+
 export function BAIHeaderActionButton({
 	label,
 	disabled = false,
@@ -85,16 +88,16 @@ const styles = StyleSheet.create({
 	},
 	solidWrap: {
 		minWidth: 96,
-		minHeight: 50,
+		minHeight: HEADER_ACTION_HEIGHT,
 		paddingHorizontal: 18,
-		borderRadius: 25,
+		borderRadius: HEADER_ACTION_RADIUS,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	iconWrap: {
-		width: 50,
-		height: 50,
-		borderRadius: 25,
+		width: HEADER_ACTION_HEIGHT,
+		height: HEADER_ACTION_HEIGHT,
+		borderRadius: HEADER_ACTION_RADIUS,
 		alignItems: "center",
 		justifyContent: "center",
 	},

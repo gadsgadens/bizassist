@@ -48,8 +48,6 @@ import { BAIEmptyStateButton } from "@/components/ui/BAIEmptyStateButton";
 import { BAIRetryButton } from "@/components/ui/BAIRetryButton";
 import { BAIGroupTabs, type BAIGroupTab } from "@/components/ui/BAIGroupTabs";
 
-import { useAuth } from "@/modules/auth/AuthContext";
-import { getUserAvatarInitials } from "@/modules/auth/auth.user";
 import { InventorySearchBar } from "@/modules/inventory/components/InventorySearchBar";
 import { inventoryApi } from "@/modules/inventory/inventory.api";
 import { mapInventoryRouteToScope, type InventoryRouteScope } from "@/modules/inventory/navigation.scope";
@@ -324,10 +322,8 @@ export default function InventoryPhoneScreen({ routeScope = "inventory" }: { rou
 	const theme = useTheme();
 	const borderColor = theme.colors.outlineVariant ?? theme.colors.outline;
 	const surfaceAlt = theme.colors.surfaceVariant ?? theme.colors.surface;
-	const { user } = useAuth();
 	const { countryCode } = useActiveBusinessMeta();
 	const toScopedRoute = useCallback((route: string) => mapInventoryRouteToScope(route, routeScope), [routeScope]);
-	const userAvatarInitials = useMemo(() => getUserAvatarInitials(user), [user]);
 
 	const params = useLocalSearchParams<{ q?: string; filter?: string; type?: string }>();
 	const paramQ = useMemo(() => String(params.q ?? "").trim(), [params.q]);
@@ -599,11 +595,6 @@ export default function InventoryPhoneScreen({ routeScope = "inventory" }: { rou
 									>
 										Create
 									</BAIButton>
-									<View style={[styles.avatarPlaceholder, { borderColor, backgroundColor: surfaceAlt }]}>
-										<BAIText variant='subtitle' style={styles.avatarPlaceholderText}>
-											{userAvatarInitials}
-										</BAIText>
-									</View>
 								</View>
 							</View>
 
@@ -749,19 +740,6 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 10,
 		marginLeft: 12,
-	},
-	avatarPlaceholder: {
-		width: 50,
-		height: 50,
-		borderRadius: 999,
-		borderWidth: StyleSheet.hairlineWidth,
-		alignItems: "center",
-		justifyContent: "center",
-		flexShrink: 0,
-	},
-	avatarPlaceholderText: {
-		fontWeight: "700",
-		letterSpacing: 0.2,
 	},
 	titleRow: {
 		flexDirection: "row",

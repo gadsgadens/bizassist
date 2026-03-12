@@ -23,6 +23,28 @@ Quick index:
 - See **2026-03-12 — Auth Device Cap Lock** for install-scoped device binding and active-device session cap governance.
 - See **2026-03-12 — Bottom Tab Bar Dock Geometry Lock** for the canonical floating dock, scan button, active indicator, icon sizing, and border treatment rules.
 - See **2026-03-12 — Top Header Avatar Placement Lock** for where user-avatar placeholders belong in the app header hierarchy.
+- See **2026-03-13 — Shared Group Tabs Motion Lock** for the canonical animated pill behavior, label transition, and heavy-tab handoff timing of `BAIGroupTabs`.
+- See **2026-03-13 — Modifier Flow Header Ownership Transition Lock** for the canonical route-level header ownership strategy that prevents layout displacement during modifier back/exit transitions.
+- See **2026-03-13 — Screen Top Padding Governance Lock** for the default `paddingTop: 0` rule on screen containers and content wrappers.
+
+## 2026-03-13 — Screen Top Padding Governance Lock
+
+### Memory Lock
+
+- Canonical policy name is **Screen Top Padding Governance**.
+- Canonical masterplan reference is:
+  - `docs/MASTERPLAN_GUIDE.md` section `0.13 Screen Top Padding Governance (Locked)`
+
+### Locked Decisions
+
+- Screen containers and primary screen content wrappers default to `paddingTop: 0`.
+- Top padding is an exception-only adjustment and must be tied to a specific documented layout reason.
+- Top padding must not be used as an ad-hoc visual nudge when the real issue belongs to header, safe-area, or wrapper ownership.
+
+### Enforcement
+
+- Future UI tasks should begin from `paddingTop: 0` unless the request or the governing flow explicitly requires otherwise.
+- If a screen appears vertically misaligned, fix the layout ownership first instead of adding casual top padding.
 
 ## 2026-03-12 — Bottom Tab Bar Dock Geometry Lock
 
@@ -47,6 +69,17 @@ Quick index:
   - no top highlight sheen;
   - no bottom shade sheen;
   - keep only the translucent base fill plus subtle inner stroke.
+- Shared dock translucency is locked to:
+  - dock alpha `0.82` in light mode
+  - dock alpha `0.66` in dark mode
+  - scan-button alpha `0.84` in light mode
+  - scan-button alpha `0.70` in dark mode
+- Bottom safe-area scrim is part of the bottom dock system and is locked to:
+  - app-background-derived gradient colors rather than unrelated white/black fades
+  - tabbed height `safe-area inset + 32`
+  - non-tabbed height `safe-area inset + 24`
+  - light-mode opacity `0 -> 0.60 -> 0.90`
+  - dark-mode opacity `0 -> 0.66 -> 0.96`
 
 ### Enforcement
 
@@ -62,19 +95,47 @@ Quick index:
 
 ### Locked Decisions
 
-- Top-header avatar placeholders are allowed on workspace pages and list/index destination pages.
-- Top-header avatar placeholders must not be shown by default on process screens, picker screens, detail screens, scan flows, or confirmation flows.
-- The avatar is treated as an app-level identity anchor, not a universal decoration for every header.
-- Reusable header APIs may support avatar placeholders, but screens must opt in deliberately.
-- Custom right-header action clusters may include both an action button and an avatar only when the screen is a destination/index surface and the title remains visually balanced.
-- Top-header avatar placeholders are locked at `50` points high.
-- Top-header action buttons in the same visual cluster as an avatar are locked at `50` points high and must mirror the avatar height.
+- Shared top headers show the user avatar by default.
+- Shared top headers must suppress the avatar whenever a right-side action or custom right slot is present.
+- Moving forward, shared top headers must not use action-plus-avatar clusters.
+- The avatar is treated as the default identity anchor for shared headers when no competing right-side action exists.
+- Top-header avatar placeholders are locked at `44` points high.
+- Top-header action buttons occupying the same header-affordance role are locked at `44` points high and must mirror avatar height.
 
 ### Enforcement
 
-- New header work must start from the rule: avatar on destination/index pages, no avatar on task/process flows.
+- New shared-header work must start from the rule: avatar by default, but no avatar when a right-side action exists.
 - Any exception requires an explicit product reason and must preserve title centering and header action clarity.
-- Future top-header action clusters must not introduce mixed heights between the avatar and adjacent header action buttons.
+- Future top-header action clusters must not reintroduce mixed heights or avatar-plus-action combinations in shared headers.
+
+## 2026-03-13 — Shared Group Tabs Motion Lock
+
+### Memory Lock
+
+- Canonical policy name is **Shared Group Tabs Motion**.
+- Canonical masterplan reference is:
+  - `docs/MASTERPLAN_GUIDE.md` section `1.10.2 Shared Group Tabs Motion Governance (Locked)`
+
+### Locked Decisions
+
+- `BAIGroupTabs` is the canonical reusable grouped-tab control for animated peer-view switching.
+- The active pill motion must mirror the bottom tab bar motion model:
+  - initialize directly at the correct tab on first layout;
+  - slide horizontally with eased motion on tab change;
+  - preserve stable tab widths and fixed geometry during the animation.
+- The tab label transition must be smooth and must animate with the same timing window as the sliding pill.
+- For tabs that trigger heavier work, `BAIGroupTabs` must remain motion-first:
+  - start the pill/text animation immediately on press;
+  - defer the parent `onChange` handoff so the motion gets a visual head start.
+- The current heavy-tab handoff lock is:
+  - animation duration `240ms`
+  - parent-change dispatch delay `180ms`
+  - `onChange` wrapped in `startTransition(...)`
+
+### Enforcement
+
+- Future grouped-tab refactors must preserve motion-first responsiveness before content work begins.
+- Do not revert grouped tabs to instant highlight swaps or synchronous heavy-work dispatch on press unless this lock is explicitly revised in memory and masterplan.
 
 ## 2026-03-12 — Inventory Realtime Image Sync Lock
 
@@ -906,10 +967,37 @@ The Technical Standards Manual is now a required governance layer and defines en
   - runtime header visibility flips from inside the mounted screen are a known source of one-frame header flash/flicker
 - Modifiers flow reference:
   - `ModifierGroupUpsertScreen` prefetches Apply Set data
-  - `ModifierGroupApplySetPickerScreen` stays on the stack-managed header path
+  - `ModifierGroupApplySetPickerScreen` now follows the in-screen `BAIHeader` path, with stack header visibility resolved statically in the route layout before transition
   - `BAIHeader` top inset is clamped against initial metrics to prevent first-frame jump
 - Discounts flow reference:
   - discounts ledger routes hide the stack header in the stack layout, not through in-screen `Stack.Screen` overrides
+
+## 2026-03-13 — Modifier Flow Header Ownership Transition Lock
+
+### Memory Lock
+
+- Canonical policy name is **Modifier Flow Header Ownership Transition**.
+- Canonical masterplan reference is:
+  - `docs/MASTERPLAN_GUIDE.md` section `1.10.3 Modifier Flow Header Ownership Transition Governance (Locked)`
+
+### Locked Decisions
+
+- Modifier routes must not change header ownership after mount.
+- If a modifier screen renders its own `BAIHeader`, that route must declare `headerShown: false` in the owning stack layout before the transition begins.
+- Runtime `Stack.Screen` header visibility flips from inside modifier screens are prohibited.
+- Inventory modifier routes using in-screen headers are locked to static navigator config:
+  - `modifiers/index`
+  - `modifiers/picker`
+  - `modifiers/create`
+  - `modifiers/apply-set`
+  - `modifiers/[id]/edit`
+- Settings modifiers ledger route is also locked to static `headerShown: false` in the settings stack layout.
+- Modifier detail/archive/restore routes may remain stack-header-owned only when they keep that ownership stable for the full route lifecycle.
+
+### Enforcement
+
+- Future modifier navigation work must preserve one header owner per route from transition start through unmount.
+- If a modifier transition bug appears on back/exit, audit stack-layout header ownership first before changing screen layout or adding compensating UI wrappers.
 
 ## 2026-03-03 — BAINeutralCheckbox Design Lock (Masterplan + Memory)
 

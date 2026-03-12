@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, Image, Pressable, StyleSheet, View } from "react-native";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTheme } from "react-native-paper";
 import { useQuery } from "@tanstack/react-query";
 
@@ -298,24 +298,17 @@ export function ModifierGroupApplySetPickerScreen({ mode }: Props) {
 
 	return (
 		<>
-			<Stack.Screen
-				options={{
-					headerShown: true,
-					header: () => (
-						<BAIHeader
-							title='Apply Set'
-							variant='back'
-							onLeftPress={onBack}
-							onRightPress={onApplySelection}
-							rightRailWidth={96}
-							rightSlot={({ disabled }) => (
-								<BAIHeaderActionButton label='Apply' variant='solid-primary' disabled={disabled} />
-							)}
-						/>
-					),
-				}}
-			/>
 			<BAIScreen tabbed padded={false} safeTop={false} safeBottom={false} safeAreaGradientBottom>
+				<BAIHeader
+					title='Apply Set'
+					variant='back'
+					onLeftPress={onBack}
+					onRightPress={onApplySelection}
+					rightRailWidth={96}
+					rightSlot={({ disabled }) => (
+						<BAIHeaderActionButton label='Apply' variant='solid-primary' disabled={disabled} />
+					)}
+				/>
 				<View style={styles.screen}>
 					<View style={styles.content}>
 						<View style={[styles.actionContainer, { borderColor, backgroundColor: theme.colors.surface }]}>

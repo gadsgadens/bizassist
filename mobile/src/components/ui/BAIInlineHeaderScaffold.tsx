@@ -20,7 +20,7 @@ export function BAIInlineHeaderScaffold({
 	variant,
 	onLeftPress,
 	disabled = false,
-	showAvatarPlaceholder = false,
+	showAvatarPlaceholder = true,
 	children,
 	style,
 }: BAIInlineHeaderScaffoldProps) {

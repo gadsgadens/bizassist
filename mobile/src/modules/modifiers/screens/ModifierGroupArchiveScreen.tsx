@@ -91,6 +91,7 @@ export function ModifierGroupArchiveScreen({ mode }: { mode: "settings" | "inven
 									shape='pill'
 									widthPreset='standard'
 									style={styles.actionButton}
+									variant='solid'
 									intent='danger'
 									onPress={onConfirm}
 								>

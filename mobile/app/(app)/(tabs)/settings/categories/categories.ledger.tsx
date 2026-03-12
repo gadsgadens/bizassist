@@ -6,14 +6,14 @@
 // - Header Back should not rely on history because duplicate ledger entries can self-pop first.
 
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { FlatList, Keyboard, Pressable, StyleSheet, TouchableWithoutFeedback, View } from "react-native";
-import { Stack, useRouter } from "expo-router";
+import { FlatList, Keyboard, StyleSheet, TouchableWithoutFeedback, View } from "react-native";
+import { useRouter } from "expo-router";
 import { useTheme } from "react-native-paper";
 
 import { BAIActivityIndicator } from "@/components/system/BAIActivityIndicator";
+import { BAIButton } from "@/components/ui/BAIButton";
 import { BAIGroupTabs, type BAIGroupTab } from "@/components/ui/BAIGroupTabs";
 import { BAIHeader } from "@/components/ui/BAIHeader";
 import { BAIPressableRow } from "@/components/ui/BAIPressableRow";
@@ -25,14 +25,12 @@ import { BAIText } from "@/components/ui/BAIText";
 import { SettingsScreenLayout } from "@/components/settings/SettingsLayout";
 
 import { useAppBusy } from "@/hooks/useAppBusy";
-import { useAuth } from "@/modules/auth/AuthContext";
 import { categoriesApi } from "@/modules/categories/categories.api";
 import { useCategoryVisibilityQuery } from "@/modules/categories/categories.queries";
 import { categoryKeys } from "@/modules/categories/categories.queryKeys";
 import type { Category } from "@/modules/categories/categories.types";
 import { CategoryRow } from "@/modules/categories/components/CategoryRow";
 import { useActiveBusinessMeta } from "@/modules/business/useActiveBusinessMeta";
-import { getUserAvatarInitials } from "@/modules/auth/auth.user";
 import { formatCompactNumber } from "@/lib/locale/businessLocale";
 import { FIELD_LIMITS } from "@/shared/fieldLimits";
 import { sanitizeSearchInput } from "@/shared/validation/sanitize";
@@ -74,11 +72,9 @@ export function CategoriesLedgerScreen({
 	const router = useRouter();
 	const theme = useTheme();
 	const { countryCode } = useActiveBusinessMeta();
-	const { user } = useAuth();
 	const { busy } = useAppBusy();
 	const isBusy = !!busy?.isBusy;
 	const isTablet = layout === "tablet";
-	const userAvatarInitials = useMemo(() => getUserAvatarInitials(user), [user]);
 
 	const tabBarHeight = useBottomTabBarHeight();
 	const TAB_KISS_GAP = 12;
@@ -131,6 +127,13 @@ export function CategoriesLedgerScreen({
 				count: categoryCounts[tab.value],
 			})),
 		[categoryCounts],
+	);
+	const categorySummary = useMemo(
+		() =>
+			`${formatCompactCount(categoryCounts.all, countryCode)} total categories${
+				categoryCounts.archived > 0 ? ` • ${formatCompactCount(categoryCounts.archived, countryCode)} archived` : ""
+			}`,
+		[categoryCounts.all, categoryCounts.archived, countryCode],
 	);
 	const mutedIconColor = theme.colors.onSurfaceVariant ?? theme.colors.onSurface;
 	const hiddenActiveCount = useMemo(
@@ -224,65 +227,60 @@ export function CategoriesLedgerScreen({
 
 	return (
 		<>
-			<Stack.Screen options={{ headerShown: false }} />
-			<BAIScreen tabbed padded={false} safeTop={false} safeBottom={false} style={styles.root}>
+			<BAIScreen
+				tabbed
+				padded={false}
+				safeTop={false}
+				safeBottom={false}
+				safeAreaGradientBottom
+				style={styles.root}
+			>
 				<BAIHeader
 					title='Manage Categories'
 					variant='back'
 					onLeftPress={onBack}
 					disabled={isUiDisabled}
-					rightRailWidth={118}
-					rightSlot={({ disabled }) => (
-						<View style={styles.headerActions}>
-							<Pressable
-								onPress={onCreate}
-								disabled={disabled}
-								accessibilityRole='button'
-								accessibilityLabel='Create category'
-								hitSlop={8}
-								style={({ pressed }) => [
-									styles.addCircle,
-									{ backgroundColor: theme.colors.primary, opacity: disabled ? 0.5 : 1 },
-									pressed && !disabled ? styles.headerActionPressed : null,
-								]}
-							>
-								<MaterialCommunityIcons name='plus' size={30} color={theme.colors.onPrimary} />
-							</Pressable>
-							<View
-								style={[
-									styles.headerAvatar,
-									{
-										borderColor: theme.colors.outlineVariant ?? theme.colors.outline,
-										backgroundColor: theme.colors.surfaceVariant ?? theme.colors.surface,
-									},
-								]}
-							>
-								<BAIText variant='subtitle' style={styles.headerAvatarText}>
-									{userAvatarInitials}
-								</BAIText>
-							</View>
-						</View>
-					)}
+					showAvatarPlaceholder
 				/>
 				<TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
 					<SettingsScreenLayout
-						screenStyle={{ paddingTop: 0, paddingBottom: screenBottomPad, marginTop: -6 }}
+						screenStyle={{ paddingTop: 0, paddingBottom: screenBottomPad }}
 						columnStyle={styles.contentColumn}
 						maxWidth={contentMaxWidth}
 					>
 						<View style={styles.content}>
-							{mode === "settings" ? (
-								<BAIPressableRow
-									label='Category Visibility'
-									value={visibilityRowValue}
-									onPress={onPressVisibility}
-									disabled={isUiDisabled}
-									style={styles.visibilityRow}
-								/>
-							) : null}
-
-							<BAISurface style={[styles.controlsCard, { borderColor }]} padded bordered>
+							<BAISurface style={[styles.controlsCard, { borderColor }]} padded={false} bordered>
 								<View style={styles.controls}>
+									<View style={styles.summaryRow}>
+										<View style={styles.summaryTextBlock}>
+											<BAIText variant='subtitle'>Category workspace</BAIText>
+											<BAIText variant='caption' muted>
+												{categorySummary}
+											</BAIText>
+										</View>
+										<BAIButton
+											variant='solid'
+											intent='primary'
+											shape='pill'
+											widthPreset='standard'
+											onPress={onCreate}
+											disabled={isUiDisabled}
+											style={styles.createButton}
+										>
+											Create
+										</BAIButton>
+									</View>
+
+									{mode === "settings" ? (
+										<BAIPressableRow
+											label='Category Visibility'
+											value={visibilityRowValue}
+											onPress={onPressVisibility}
+											disabled={isUiDisabled}
+											style={styles.visibilityRow}
+										/>
+									) : null}
+
 									<BAISearchBar
 										value={qText}
 										onChangeText={(v) => {
@@ -306,47 +304,47 @@ export function CategoriesLedgerScreen({
 							</BAISurface>
 
 							<View style={styles.listSection}>
-									{query.isLoading ? (
-										<View style={styles.loading}>
-											<BAIActivityIndicator />
-											<View style={{ height: 10 }} />
-											<BAIText variant='body' muted>
-												Loading...
-											</BAIText>
-										</View>
-									) : null}
+								{query.isLoading ? (
+									<View style={styles.loading}>
+										<BAIActivityIndicator />
+										<View style={{ height: 10 }} />
+										<BAIText variant='body' muted>
+											Loading...
+										</BAIText>
+									</View>
+								) : null}
 
-									{!query.isLoading && query.isError ? (
-										<View style={styles.errorBox}>
+								{!query.isLoading && query.isError ? (
+									<View style={styles.errorBox}>
+										<BAIText variant='caption' muted>
+											Failed To Load Categories.
+										</BAIText>
+										<View style={{ height: 10 }} />
+										<BAIRetryButton onPress={() => query.refetch()} disabled={isUiDisabled}>
+											Retry
+										</BAIRetryButton>
+									</View>
+								) : null}
+
+								{!query.isLoading && !query.isError && !hasAnyFiltered ? (
+									<View style={styles.emptyBox}>
+										{hasSearch ? (
+											<BAIText variant='caption' muted style={styles.emptyText}>
+												No Categories Match {`"${q}"`}.
+											</BAIText>
+										) : (
 											<BAIText variant='caption' muted>
-												Failed To Load Categories.
+												{filter === "active"
+													? "No active categories."
+													: filter === "archived"
+														? "No archived categories."
+														: "No categories available."}
 											</BAIText>
-											<View style={{ height: 10 }} />
-											<BAIRetryButton onPress={() => query.refetch()} disabled={isUiDisabled}>
-												Retry
-											</BAIRetryButton>
-										</View>
-									) : null}
+										)}
+									</View>
+								) : null}
 
-									{!query.isLoading && !query.isError && !hasAnyFiltered ? (
-										<View style={styles.emptyBox}>
-											{hasSearch ? (
-												<BAIText variant='caption' muted style={styles.emptyText}>
-													No Categories Match {`"${q}"`}.
-												</BAIText>
-											) : (
-												<BAIText variant='caption' muted>
-													{filter === "active"
-														? "No active categories."
-														: filter === "archived"
-															? "No archived categories."
-															: "No categories available."}
-												</BAIText>
-											)}
-										</View>
-									) : null}
-
-									{!query.isLoading ? list : null}
+								{!query.isLoading ? list : null}
 							</View>
 						</View>
 					</SettingsScreenLayout>
@@ -369,43 +367,34 @@ const styles = StyleSheet.create({
 	content: {
 		flex: 1,
 		minHeight: 0,
-		gap: 12,
+		gap: 10,
 	},
 	controlsCard: {
 		borderRadius: 18,
+		paddingHorizontal: 12,
+		paddingTop: 12,
+		paddingBottom: 12,
+		marginBottom: 0,
 	},
 	controls: {
+		gap: 10,
+	},
+	summaryRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
 		gap: 12,
+	},
+	summaryTextBlock: {
+		flex: 1,
+		minWidth: 0,
+		gap: 2,
+	},
+	createButton: {
+		minWidth: 112,
 	},
 	visibilityRow: {
 		marginTop: 0,
-	},
-	headerActions: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
-	},
-	headerActionPressed: {
-		opacity: 0.78,
-	},
-	headerAvatar: {
-		width: 50,
-		height: 50,
-		borderRadius: 999,
-		borderWidth: StyleSheet.hairlineWidth,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	headerAvatarText: {
-		fontWeight: "700",
-		letterSpacing: 0.2,
-	},
-	addCircle: {
-		width: 50,
-		height: 50,
-		borderRadius: 25,
-		alignItems: "center",
-		justifyContent: "center",
 	},
 	listSection: {
 		flex: 1,
@@ -426,7 +415,7 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	listContent: {
-		paddingTop: 8,
+		paddingTop: 4,
 		paddingBottom: 2,
 		gap: 0,
 	},

@@ -347,7 +347,7 @@ export default function SalesTaxCreateScreen() {
 									</BAIButton>
 								) : (
 									<BAIButton
-										variant='soft'
+										variant='outline'
 										intent='danger'
 										onPress={onArchive}
 										shape='default'

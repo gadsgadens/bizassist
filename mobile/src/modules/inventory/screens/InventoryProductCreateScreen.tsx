@@ -78,7 +78,7 @@ import { catalogKeys } from "@/modules/catalog/catalog.queries";
 import { toCacheBustedImageUri } from "@/modules/media/media.image";
 import { uploadProductImage } from "@/modules/media/media.upload";
 import { toMediaDomainError } from "@/modules/media/media.errors";
-import { patchPosCatalogImageCaches, patchPosCatalogProductCaches } from "@/modules/pos/pos.catalog.cache";
+import { patchPosCatalogImageCaches } from "@/modules/pos/pos.catalog.cache";
 import { ModifierGroupSelector, modifierGroupSelectorKey } from "@/modules/modifiers/components/ModifierGroupSelector";
 import { modifiersApi } from "@/modules/modifiers/modifiers.api";
 import {
@@ -1129,7 +1129,6 @@ export default function InventoryProductCreateScreen({
 					let createdId = createdProductIdRef.current;
 					if (!createdId) {
 						const created = await inventoryApi.createProduct(apiPayload as any);
-						patchPosCatalogProductCaches(queryClient, created);
 						createdId = created.id;
 						createdProductIdRef.current = createdId;
 					}

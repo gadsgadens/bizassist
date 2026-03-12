@@ -12,7 +12,8 @@ import { useAppBackground } from "@/lib/theme/appBackground";
 
 const TAB_BAR_HEIGHT = 64;
 const TAB_BAR_GUTTER = 12;
-const BOTTOM_SAFE_AREA_SCRIM_OVERLAP = 18;
+const BOTTOM_SAFE_AREA_SCRIM_TAB_OVERFLOW = 32;
+const BOTTOM_SAFE_AREA_SCRIM_PLAIN_OVERFLOW = 24;
 
 function clampAlpha(value: number): number {
 	if (!Number.isFinite(value)) return 1;
@@ -132,7 +133,9 @@ export function BAIScreen({
 	const showTopSafeGradient = safeAreaGradientTop && insets.top > 0;
 	const showBottomSafeGradient = safeAreaGradientBottom && insets.bottom > 0;
 	const topSafeHeight = insets.top + 20;
-	const bottomSafeHeight = tabbed ? insets.bottom + TAB_BAR_HEIGHT + BOTTOM_SAFE_AREA_SCRIM_OVERLAP : insets.bottom + 32;
+	const bottomSafeHeight = tabbed
+		? insets.bottom + BOTTOM_SAFE_AREA_SCRIM_TAB_OVERFLOW
+		: insets.bottom + BOTTOM_SAFE_AREA_SCRIM_PLAIN_OVERFLOW;
 
 	const topSafeGradientColors = theme.dark
 		? (["rgba(0,0,0,0.62)", "rgba(0,0,0,0.24)", "rgba(0,0,0,0)"] as const)
@@ -140,10 +143,14 @@ export function BAIScreen({
 	const bottomSafeGradientColors = theme.dark
 		? ([
 				colorWithAlpha(backgroundColor, 0, true),
-				colorWithAlpha(backgroundColor, 0.78, true),
-				colorWithAlpha(backgroundColor, 1, true),
+				colorWithAlpha(backgroundColor, 0.66, true),
+				colorWithAlpha(backgroundColor, 0.96, true),
 			] as const)
-		: (["rgba(255,255,255,0)", "rgba(255,255,255,0.82)", "rgba(255,255,255,1)"] as const);
+		: ([
+				colorWithAlpha(backgroundColor, 0, false),
+				colorWithAlpha(backgroundColor, 0.6, false),
+				colorWithAlpha(backgroundColor, 0.9, false),
+			] as const);
 
 	/**
 	 * Base content styling shared by scroll + non-scroll.

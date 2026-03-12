@@ -188,6 +188,7 @@ export function BAIButton({
 		theme.colors.onSurface;
 
 	const isPrimarySolid = safeIntent === "primary" && safeVariant === "solid";
+	const isDangerSolid = safeIntent === "danger" && safeVariant === "solid";
 	const primaryDisabledCfg = baiButtonPrimaryDisabledSolid[modeKey];
 	const primaryPressedCfg = baiButtonPrimaryPressedSolid[modeKey];
 
@@ -233,8 +234,8 @@ export function BAIButton({
 
 	const isNeutralOutlineEnabled = !isVisuallyDisabled && safeIntent === "neutral" && safeVariant === "outline";
 
-	const resolvedTextColor = isPrimarySolid
-		? "#FFFFFF"
+	const resolvedTextColor = isPrimarySolid || isDangerSolid
+		? cfg.text
 		: isVisuallyDisabled
 			? getAccessibleTextColor(effectiveBgForText, DISABLED_PREFERRED_DARK_TEXT, 4.5)
 			: isNeutralOutlineEnabled

@@ -70,9 +70,9 @@ export default function InventoryStackLayout() {
 			<Stack.Screen name='products/create' options={{ title: "Add Items" }} />
 			<Stack.Screen name='products/manage-stock' options={{ headerShown: false }} />
 			<Stack.Screen name='products/stock-received' options={{ headerShown: false }} />
-			<Stack.Screen name='categories/category.ledger' options={{ title: "Categories" }} />
+			<Stack.Screen name='categories/category.ledger' options={{ headerShown: false }} />
 			<Stack.Screen name='categories/create' options={{ title: "Create Category" }} />
-			<Stack.Screen name='categories/[id]/index' options={{ title: "Category Details" }} />
+			<Stack.Screen name='categories/[id]/index' options={{ headerShown: false }} />
 			<Stack.Screen name='categories/[id]/edit' options={{ title: "Edit Category" }} />
 			<Stack.Screen name='categories/[id]/archive' options={{ title: "Archive Category" }} />
 			<Stack.Screen name='categories/[id]/restore' options={{ title: "Restore Category" }} />
@@ -81,12 +81,14 @@ export default function InventoryStackLayout() {
 			<Stack.Screen name='discounts/create' options={{ headerShown: false }} />
 			<Stack.Screen name='discounts/[id]/index' options={{ headerShown: false }} />
 			<Stack.Screen name='discounts/[id]/edit' options={{ title: "Edit Discount" }} />
-			<Stack.Screen name='modifiers/index' options={{ title: "Modifiers" }} />
-			<Stack.Screen name='modifiers/picker' options={{ title: "Select Modifier Sets" }} />
-			<Stack.Screen name='modifiers/create' options={{ title: "Create Modifier Set" }} />
+			<Stack.Screen name='modifiers/index' options={{ headerShown: false }} />
+			<Stack.Screen name='modifiers/picker' options={{ headerShown: false }} />
+			<Stack.Screen name='modifiers/create' options={{ headerShown: false }} />
+			<Stack.Screen name='modifiers/apply-set' options={{ headerShown: false }} />
 			<Stack.Screen name='modifiers/[id]/index' options={{ title: "Modifier Details" }} />
-			<Stack.Screen name='modifiers/[id]/edit' options={{ title: "Edit Modifier Set" }} />
+			<Stack.Screen name='modifiers/[id]/edit' options={{ headerShown: false }} />
 			<Stack.Screen name='modifiers/[id]/archive' options={{ title: "Archive Modifier Set" }} />
+			<Stack.Screen name='modifiers/[id]/restore' options={{ title: "Restore Modifier Set" }} />
 			<Stack.Screen name='units/add' options={{ title: "Unit Category", headerBackTitle: "Unit Type" }} />
 			<Stack.Screen name='units/select' options={{ title: "Add Unit", headerBackTitle: "Add Unit" }} />
 			<Stack.Screen

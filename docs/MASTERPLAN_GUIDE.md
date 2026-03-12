@@ -367,6 +367,7 @@ Breaking changes require API versioning.
 - Keep form state local until explicit submit.
 - Validate before mutation.
 - Use continuous-scroll section architecture.
+- Default screen/container top padding to `0`; only add positive top padding when the flow has an explicit documented spacing need.
 - Normalize vertical rhythm across sibling forms (create/edit) using one spacing scale per flow.
 - For inventory/service form surfaces, treat `12` as the default vertical spacing unit for section content gaps, stacked field gaps, and action-group spacing unless a documented exception is required.
 - Avoid ad-hoc spacer views and negative/one-off margin nudges for vertical layout; prefer governed style tokens in the screen StyleSheet.
@@ -772,7 +773,24 @@ Enforcement:
 
 Purpose:
 
-- This lock standardizes the floating bottom-tab-bar geometry so iterative visual tuning does not drift across screens or releases.
+- This lock standardizes the floating bottom-tab-bar geometry, translucency, and safe-area scrim behavior so iterative visual tuning does not drift across screens or releases.
+
+## 0.13 Screen Top Padding Governance (Locked)
+
+Purpose:
+
+- This lock standardizes default screen-level top padding so vertical layout tuning does not drift across workspaces and flows.
+
+Locked rule:
+
+- Screen containers and primary screen content wrappers must default to `paddingTop: 0`.
+- Add top padding only when a flow has an explicit, documented reason tied to a specific header, overlay, or visual treatment.
+- Do not introduce top padding as a casual visual tweak or compensating spacer.
+
+Enforcement:
+
+- New UI work should start from `paddingTop: 0` and justify any exception in the implementation.
+- If a screen looks misaligned, fix the owning layout/header relationship first rather than adding arbitrary top padding.
 
 Locked rules:
 
@@ -789,6 +807,19 @@ Locked rules:
   - no reflective top highlight layer;
   - no reflective bottom shade layer;
   - translucent fill and subtle inner stroke only.
+- Dock translucency is locked to the current shared treatment:
+  - dock fill alpha `0.82` in light mode
+  - dock fill alpha `0.66` in dark mode
+  - detached scan button fill alpha `0.84` in light mode
+  - detached scan button fill alpha `0.70` in dark mode
+- Bottom safe-area scrim governance is part of the bottom dock system:
+  - scrim color must derive from the same canonical app background used by the screen surface
+  - do not use unrelated white/black fades when the screen background token is available
+  - tabbed scrim height is locked at `safe-area inset + 32`
+  - non-tabbed scrim height is locked at `safe-area inset + 24`
+  - shared scrim gradient opacity is locked to:
+    - light mode `0 -> 0.60 -> 0.90`
+    - dark mode `0 -> 0.66 -> 0.96`
 
 Enforcement:
 
@@ -932,19 +963,62 @@ Rules:
 ### 1.10.1 Top Header Avatar Placement Governance (Locked)
 
 1. Canonical pattern name is **Top Header Avatar Placement**.
-2. The user avatar in a top header is an app-level identity anchor and must be used selectively, not universally.
-3. Avatar placement rule:
-   - show avatar on workspace pages and list/index destination pages
-   - do not show avatar by default on process screens, picker screens, detail screens, scan flows, or confirmation flows
-4. Header-balance rule:
-   - do not add an avatar if it crowds task-critical header actions or causes visible title-centering drift
-   - action-plus-avatar clusters are allowed only when the screen remains visually balanced and the page is a destination/index surface
-5. Header sizing rule:
-   - top-header avatar placeholders are locked at `50` points high
-   - top-header action buttons that sit inline with an avatar are also locked at `50` points high
-   - mixed button/avatar heights in the same top-header action cluster are not allowed
-6. Reusable header components may expose avatar-placeholder support, but callers must opt in deliberately.
-7. If a non-destination screen needs an avatar, that exception requires an explicit product reason rather than aesthetic preference alone.
+2. The user avatar in a top header is the default identity anchor for shared screen headers.
+3. Shared-header default rule:
+  - shared top headers should show the user avatar by default
+  - reusable shared header APIs should default avatar placeholders to on
+4. Action-suppression rule:
+  - if a right-side header action is present, do not show a user avatar in that same top header
+  - the same suppression applies when a custom right slot is present, even if that slot is not a plain text button
+  - do not build action-plus-avatar clusters in shared top headers moving forward
+5. Header-balance rule:
+  - avatar/default-right-rail behavior must preserve title centering and avoid compensating layout nudges
+  - if a custom header cannot remain balanced with the default avatar, the avatar should be suppressed rather than forcing mixed right-rail content
+6. Header sizing rule:
+  - top-header avatar placeholders are locked at `44` points high
+  - top-header action buttons that occupy the same visual role as a header affordance are also locked at `44` points high
+  - mixed button/avatar heights in the same top-header action zone are not allowed
+7. Custom non-shared header implementations should follow the same rule set unless an explicit documented exception is approved.
+
+### 1.10.2 Shared Group Tabs Motion Governance (Locked)
+
+1. Canonical pattern name is **Shared Group Tabs Motion**.
+2. Canonical reusable component is `BAIGroupTabs`.
+3. `BAIGroupTabs` must use a sliding active-pill animation rather than instantaneous per-tab background swaps.
+4. Motion model rule:
+   - first layout must place the active pill directly on the selected tab with no startup jump
+   - tab changes must slide the pill horizontally with eased motion
+   - tab widths must remain stable during the animation
+5. Label transition rule:
+   - tab labels must transition smoothly with the pill
+   - label-state changes must not visually jump ahead of the active-pill movement
+6. Heavy-tab compensation rule:
+   - grouped tabs must be motion-first when a tab triggers heavier render work
+   - start the pill/text animation immediately on press
+   - delay the parent `onChange` handoff so the motion gets a visible head start
+   - wrap the handoff in `startTransition(...)`
+7. Current locked timing values:
+   - pill/text animation duration: `240ms`
+   - deferred parent-change dispatch delay: `180ms`
+8. This governance is intended to keep grouped-tab motion perceptually smooth even when the destination tab performs heavier work after selection.
+
+### 1.10.3 Modifier Flow Header Ownership Transition Governance (Locked)
+
+1. Canonical pattern name is **Modifier Flow Header Ownership Transition**.
+2. Modifier flow routes must keep one stable header owner for the full route lifecycle.
+3. Header ownership rule:
+   - if a modifier screen uses an in-screen `BAIHeader`, the owning stack route must declare `headerShown: false` in the navigator layout before the transition begins
+   - do not mount a modifier screen and then flip stack header visibility from inside the screen component with a runtime `Stack.Screen` override
+4. Inventory modifier route lock:
+   - `modifiers/index`, `modifiers/picker`, `modifiers/create`, `modifiers/apply-set`, and `modifiers/[id]/edit` are in-screen-header routes and must remain stack-hidden at the layout level
+5. Settings modifier route lock:
+   - the settings modifiers ledger route is also stack-hidden at the layout level because it owns its header in-screen
+6. Stable-stack exception rule:
+   - modifier routes may remain stack-header-owned only when they keep that ownership stable from transition start through unmount
+   - detail/archive/restore routes may use stack headers if they do not switch ownership during render
+7. Back/exit bug triage rule:
+   - if a modifier back or exit transition misplaces the UI layout, audit route-level header ownership first
+   - do not patch the symptom by adding extra wrapper spacing, duplicate headers, or runtime header flips
 
 ### 1.11 POS Numeric Bottom Sheet Keyboard Governance (Locked)
 

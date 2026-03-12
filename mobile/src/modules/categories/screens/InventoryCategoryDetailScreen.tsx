@@ -6,7 +6,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTheme } from "react-native-paper";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -15,6 +15,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { BAIActivityIndicator } from "@/components/system/BAIActivityIndicator";
 import { BAIButton } from "@/components/ui/BAIButton";
+import { BAIHeader } from "@/components/ui/BAIHeader";
 import { BAIRetryButton } from "@/components/ui/BAIRetryButton";
 import { BAIScreen } from "@/components/ui/BAIScreen";
 import { BAISurface } from "@/components/ui/BAISurface";
@@ -25,7 +26,6 @@ import { categoriesApi } from "@/modules/categories/categories.api";
 import { categoryKeys } from "@/modules/categories/categories.queryKeys";
 import type { Category } from "@/modules/categories/categories.types";
 import { inventoryApi } from "@/modules/inventory/inventory.api";
-import { useInventoryHeader } from "@/modules/inventory/useInventoryHeader";
 import type { InventoryProduct } from "@/modules/inventory/inventory.types";
 import { useActiveBusinessMeta } from "@/modules/business/useActiveBusinessMeta";
 import { formatCompactNumber } from "@/lib/locale/businessLocale";
@@ -235,12 +235,10 @@ export default function InventoryCategoryDetailScreen() {
 
 	const borderColor = theme.colors.outlineVariant ?? theme.colors.outline;
 	const colorHex = category?.color?.trim() || "";
-	const headerOptions = useInventoryHeader("detail", { title: "Category Details", disabled: isUiDisabled, onBack });
-
 	return (
 		<>
-			<Stack.Screen options={headerOptions} />
 			<BAIScreen padded={false} safeTop={false} safeBottom={false} style={styles.root}>
+				<BAIHeader title='Category Details' variant='back' onLeftPress={onBack} disabled={isUiDisabled} />
 				<View
 					style={[
 						styles.screen,

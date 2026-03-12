@@ -249,16 +249,16 @@ export function BAIBottomTabBar(props: BottomTabBarProps) {
 	const bottom = Math.max(insets.bottom - BOTTOM_SAFE_AREA_REDUCTION, 2);
 
 	const outlineBase = theme.colors.outlineVariant ?? theme.colors.outline;
-	const dockBg = applyAlpha(theme.colors.surface, theme.dark ? 0.72 : 0.9);
-	const containerBorderColor = applyAlpha(outlineBase, theme.dark ? 0.72 : 0.44);
-	const activeBorderColor = applyAlpha(outlineBase, theme.dark ? 0.34 : 0.18);
+	const dockBg = applyAlpha(theme.colors.surface, theme.dark ? 0.66 : 0.82);
+	const containerBorderColor = applyAlpha(outlineBase, theme.dark ? 0.78 : 0.52);
+	const activeBorderColor = applyAlpha(outlineBase, theme.dark ? 0.4 : 0.24);
 	const glassInnerStroke = applyAlpha(theme.colors.onSurface, theme.dark ? 0.06 : 0.08);
 
 	const activeBubbleBg = theme.dark
 		? applyAlpha(theme.colors.surfaceVariant ?? theme.colors.surface, 0.96)
 		: applyAlpha(theme.colors.onSurface, 0.08);
 
-	const scanButtonBg = applyAlpha(theme.colors.surface, theme.dark ? 0.76 : 0.92);
+	const scanButtonBg = applyAlpha(theme.colors.surface, theme.dark ? 0.7 : 0.84);
 	const scanButtonBorderColor = containerBorderColor;
 
 	const tabForegroundColor = theme.dark ? "#FFFFFF" : "#000000";
@@ -600,10 +600,10 @@ const styles = StyleSheet.create({
 		overflow: "hidden",
 
 		shadowColor: "#000",
-		shadowOpacity: 0.16,
-		shadowRadius: 18,
-		shadowOffset: { width: 0, height: 8 },
-		elevation: 6,
+		shadowOpacity: 0.2,
+		shadowRadius: 20,
+		shadowOffset: { width: 0, height: 10 },
+		elevation: 7,
 	},
 
 	glassFill: {
@@ -662,10 +662,10 @@ const styles = StyleSheet.create({
 		overflow: "hidden",
 
 		shadowColor: "#000",
-		shadowOpacity: 0.16,
-		shadowRadius: 18,
-		shadowOffset: { width: 0, height: 8 },
-		elevation: 6,
+		shadowOpacity: 0.2,
+		shadowRadius: 20,
+		shadowOffset: { width: 0, height: 10 },
+		elevation: 7,
 	},
 
 	label: {

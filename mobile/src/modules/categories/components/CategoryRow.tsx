@@ -166,10 +166,10 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		flexDirection: "row",
 		alignItems: "center",
-		paddingVertical: 8,
 	},
 	rowCompact: {
-		paddingVertical: 6,
+		marginBottom: 8,
+		paddingVertical: 14,
 	},
 	pressArea: {
 		flex: 1,
@@ -177,11 +177,8 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		paddingVertical: 4,
 	},
-	pressAreaCompact: {
-		paddingVertical: 3,
-	},
+	pressAreaCompact: {},
 	left: {
 		flex: 1,
 		minWidth: 0,

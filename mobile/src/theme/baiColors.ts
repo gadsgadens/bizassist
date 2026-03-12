@@ -504,8 +504,8 @@ const neutralThemeDark: Record<BAIButtonVariant, BAIButtonColorConfig> = {
 
 const dangerThemeLight = buildIntentTheme(
 	{
-		main: baiColors.red[700],
-		dark: baiColors.red[800],
+		main: baiColors.red[600],
+		dark: baiColors.red[700],
 		soft: baiColors.red[50],
 		softBorder: baiColors.red[200],
 	},
@@ -515,8 +515,8 @@ const dangerThemeLight = buildIntentTheme(
 
 const dangerThemeDark = buildIntentTheme(
 	{
-		main: baiColors.red[700],
-		dark: baiColors.red[800],
+		main: baiColors.red[600],
+		dark: baiColors.red[700],
 		soft: baiColors.red[50],
 		softBorder: baiColors.red[200],
 	},

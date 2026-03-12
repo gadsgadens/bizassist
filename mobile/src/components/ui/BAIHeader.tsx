@@ -15,6 +15,7 @@ export type BAIHeaderProps = {
 	title: string;
 	variant: "back" | "exit";
 	rightSlot?: ReactNode | ((options: { disabled: boolean }) => ReactNode);
+	/** Defaults to true. Avatar placeholder is only shown when there is no right-side action or custom slot. */
 	showAvatarPlaceholder?: boolean;
 	barHeight?: number;
 	rightRailWidth?: number;
@@ -29,15 +30,15 @@ export type BAIHeaderProps = {
 };
 
 const HEADER_BAR_HEIGHT = 56;
-const HEADER_ACTION_HEIGHT_XXL = 58;
+const HEADER_ACTION_HEIGHT_XXL = 44;
 const HEADER_ACTION_WIDTH_XXL = 64;
-const HEADER_AVATAR_SIZE = 50;
+const HEADER_AVATAR_SIZE = 44;
 
 export function BAIHeader({
 	title,
 	variant,
 	rightSlot,
-	showAvatarPlaceholder = false,
+	showAvatarPlaceholder = true,
 	barHeight = HEADER_BAR_HEIGHT,
 	rightRailWidth,
 	titleHorizontalPadding = 0,
@@ -94,8 +95,10 @@ export function BAIHeader({
 		onRightPress();
 	}, [lockTap, onRightPress, rightActionDisabled]);
 
+	const shouldShowAvatarPlaceholder = showAvatarPlaceholder && !rightSlot && !onRightPress;
+
 	const renderedRightSlot = useMemo(() => {
-		if (!rightSlot && showAvatarPlaceholder) {
+		if (shouldShowAvatarPlaceholder) {
 			return (
 				<View
 					style={[
@@ -120,7 +123,7 @@ export function BAIHeader({
 	}, [
 		rightActionDisabled,
 		rightSlot,
-		showAvatarPlaceholder,
+		shouldShowAvatarPlaceholder,
 		theme.colors.outline,
 		theme.colors.outlineVariant,
 		theme.colors.surface,

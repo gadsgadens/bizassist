@@ -181,6 +181,6 @@ const styles = StyleSheet.create({
 	root: { flex: 1 },
 	keyboardAvoider: { flex: 1 },
 	keyboardContent: { flex: 1 },
-	screen: { flex: 1, padding: 12 },
+	screen: { flex: 1, padding: 12, paddingTop: 0 },
 	card: { borderRadius: 24 },
 });

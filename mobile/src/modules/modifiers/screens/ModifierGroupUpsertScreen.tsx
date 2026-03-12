@@ -11,7 +11,7 @@ import {
 	TouchableWithoutFeedback,
 	View,
 } from "react-native";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "react-native-paper";
 import { useQueryClient } from "@tanstack/react-query";
@@ -95,26 +95,6 @@ function clampSelectionRuleInput(raw: string, min: number, max: number): string 
 	const parsed = Number.parseInt(digits, 10);
 	if (!Number.isFinite(parsed)) return "";
 	return String(Math.min(max, Math.max(min, parsed)));
-}
-
-function resolveNextMinorFromInput(currentMinor: number, nextText: string): number {
-	const safeCurrentMinor = toSafeMinor(currentMinor);
-	const sanitized = sanitizeDigits(nextText);
-	const currentDigits = sanitizeDigits(String(safeCurrentMinor));
-	const capReached = currentDigits.length >= PRICE_INPUT_MAX_MINOR_DIGITS;
-	const isGrowthAttempt = sanitized.length > currentDigits.length;
-
-	// Backspace-safe cap guard: allow deletes/edits while silently blocking overflow growth.
-	if (capReached && isGrowthAttempt) {
-		return safeCurrentMinor;
-	}
-
-	const isSingleAppend = sanitized.length === currentDigits.length + 1 && sanitized.startsWith(currentDigits);
-
-	// Silent growth lock: append-mode for single-key growth, full reparse for bulk edits/paste.
-	return isSingleAppend
-		? digitsToMinorUnits(currentDigits + sanitized[sanitized.length - 1], PRICE_INPUT_MAX_MINOR_DIGITS)
-		: digitsToMinorUnits(sanitized, PRICE_INPUT_MAX_MINOR_DIGITS);
 }
 
 function resolvePriceInputWidth(inputValue: string, placeholder: string, maxLength: number): number {
@@ -1125,7 +1105,7 @@ export function ModifierGroupUpsertScreen({ mode, intent }: Props) {
 					priceTextColor={hasInvalidPrice ? theme.colors.error : theme.colors.onSurface}
 					cursorIndicatorColor={theme.colors.primary}
 					showDeleteControl={showDeleteControl}
-					actionColor={isArchivedTab ? theme.colors.primary : theme.colors.error}
+					actionColor={isArchivedTab ? theme.colors.primary : baiColors.red[600]}
 					onActionColor={isArchivedTab ? theme.colors.onPrimary : theme.colors.onError}
 					actionLabel={isArchivedTab ? "Restore" : row.id ? "Archive" : "Delete"}
 					isReadOnly={isArchivedTab}
@@ -1343,7 +1323,6 @@ export function ModifierGroupUpsertScreen({ mode, intent }: Props) {
 
 	return (
 		<>
-			<Stack.Screen options={{ headerShown: false }} />
 			<BAIScreen tabbed padded={false} safeTop={false} safeBottom={false} safeAreaGradientBottom style={styles.root}>
 				<BAIHeader title={headerTitle} titleHorizontalPadding={30} variant='exit' onLeftPress={guardedExit} />
 				<TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
@@ -1610,7 +1589,7 @@ export function ModifierGroupUpsertScreen({ mode, intent }: Props) {
 				message={destructiveActionMessage}
 				confirmLabel={destructiveActionVerb}
 				cancelLabel='Cancel'
-				confirmIntent='error'
+				confirmIntent='danger'
 				cancelIntent='neutral'
 				onDismiss={closeArchiveConfirm}
 				onConfirm={onConfirmArchive}
