@@ -227,14 +227,7 @@ export function CategoriesLedgerScreen({
 
 	return (
 		<>
-			<BAIScreen
-				tabbed
-				padded={false}
-				safeTop={false}
-				safeBottom={false}
-				safeAreaGradientBottom
-				style={styles.root}
-			>
+			<BAIScreen tabbed padded={false} safeTop={false} safeBottom={false} safeAreaGradientBottom style={styles.root}>
 				<BAIHeader
 					title='Manage Categories'
 					variant='back'

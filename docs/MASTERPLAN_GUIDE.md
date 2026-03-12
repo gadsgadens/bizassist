@@ -965,19 +965,27 @@ Rules:
 1. Canonical pattern name is **Top Header Avatar Placement**.
 2. The user avatar in a top header is the default identity anchor for shared screen headers.
 3. Shared-header default rule:
-  - shared top headers should show the user avatar by default
-  - reusable shared header APIs should default avatar placeholders to on
+
+- shared top headers should show the user avatar by default
+- reusable shared header APIs should default avatar placeholders to on
+
 4. Action-suppression rule:
-  - if a right-side header action is present, do not show a user avatar in that same top header
-  - the same suppression applies when a custom right slot is present, even if that slot is not a plain text button
-  - do not build action-plus-avatar clusters in shared top headers moving forward
+
+- if a right-side header action is present, do not show a user avatar in that same top header
+- the same suppression applies when a custom right slot is present, even if that slot is not a plain text button
+- do not build action-plus-avatar clusters in shared top headers moving forward
+
 5. Header-balance rule:
-  - avatar/default-right-rail behavior must preserve title centering and avoid compensating layout nudges
-  - if a custom header cannot remain balanced with the default avatar, the avatar should be suppressed rather than forcing mixed right-rail content
+
+- avatar/default-right-rail behavior must preserve title centering and avoid compensating layout nudges
+- if a custom header cannot remain balanced with the default avatar, the avatar should be suppressed rather than forcing mixed right-rail content
+
 6. Header sizing rule:
-  - top-header avatar placeholders are locked at `44` points high
-  - top-header action buttons that occupy the same visual role as a header affordance are also locked at `44` points high
-  - mixed button/avatar heights in the same top-header action zone are not allowed
+
+- top-header avatar placeholders are locked at `44` points high
+- top-header action buttons that occupy the same visual role as a header affordance are also locked at `44` points high
+- mixed button/avatar heights in the same top-header action zone are not allowed
+
 7. Custom non-shared header implementations should follow the same rule set unless an explicit documented exception is approved.
 
 ### 1.10.2 Shared Group Tabs Motion Governance (Locked)

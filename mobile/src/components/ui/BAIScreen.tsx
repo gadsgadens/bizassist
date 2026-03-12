@@ -28,7 +28,13 @@ function colorWithAlpha(color: string, alpha: number, fallbackDark: boolean): st
 	const hex = raw.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
 	if (hex) {
 		const token = hex[1];
-		const full = token.length === 3 ? token.split("").map((c) => `${c}${c}`).join("") : token;
+		const full =
+			token.length === 3
+				? token
+						.split("")
+						.map((c) => `${c}${c}`)
+						.join("")
+				: token;
 		const r = parseInt(full.slice(0, 2), 16);
 		const g = parseInt(full.slice(2, 4), 16);
 		const b = parseInt(full.slice(4, 6), 16);

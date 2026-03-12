@@ -174,7 +174,11 @@ export function BAIHeader({
 							onPress={handleRightPress}
 							disabled={rightActionDisabled}
 							hitSlop={8}
-							style={({ pressed }) => [styles.rightPressable, { width: resolvedRightRailWidth }, pressed && styles.rightPressed]}
+							style={({ pressed }) => [
+								styles.rightPressable,
+								{ width: resolvedRightRailWidth },
+								pressed && styles.rightPressed,
+							]}
 						>
 							{renderedRightSlot}
 						</Pressable>
